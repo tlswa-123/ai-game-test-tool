@@ -1,0 +1,156 @@
+{
+  "name": "预评分1",
+  "platforms": [
+    "我们+Claude4.7",
+    "我们+GLM5.1",
+    "WB+Claude4.7",
+    "WB+GLM5.1",
+    "Astrocade",
+    "Replit",
+    "aippy"
+  ],
+  "target": "gdd",
+  "time": "2026-05-29T07:19:45.851Z",
+  "data": [
+    {
+      "platform": "我们+Claude4.7",
+      "items": [
+        {
+          "name": "对对连消",
+          "num": 1,
+          "scores": {
+            "stability": 0,
+            "visual": 0,
+            "audio": 0,
+            "faithfulness": 0,
+            "gameplay": 0,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "无法读取",
+          "avg": "0.00"
+        }
+      ]
+    },
+    {
+      "platform": "我们+GLM5.1",
+      "items": [
+        {
+          "name": "对对连消",
+          "num": 1,
+          "scores": {
+            "stability": 0,
+            "visual": 0,
+            "audio": 0,
+            "faithfulness": 0,
+            "gameplay": 0,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "无法读取",
+          "avg": "0.00"
+        }
+      ]
+    },
+    {
+      "platform": "WB+Claude4.7",
+      "items": [
+        {
+          "name": "对对连消",
+          "num": 1,
+          "scores": {
+            "stability": 1,
+            "visual": 2,
+            "audio": 0,
+            "faithfulness": 1,
+            "gameplay": 1,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "消除后上方方块无下落填补",
+          "avg": "1.00"
+        }
+      ]
+    },
+    {
+      "platform": "WB+GLM5.1",
+      "items": [
+        {
+          "name": "对对连消",
+          "num": 1,
+          "scores": {
+            "stability": 1,
+            "visual": 2,
+            "audio": 1,
+            "faithfulness": 1,
+            "gameplay": 1,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "第一次失败无法正常游戏/网格尺寸不符/缺少星星/冰块效果美术素材/消除后上方方块无下落填补\n",
+          "avg": "1.17"
+        }
+      ]
+    },
+    {
+      "platform": "Astrocade",
+      "items": [
+        {
+          "name": "对对连消",
+          "num": 1,
+          "scores": {
+            "stability": 1,
+            "visual": 1,
+            "audio": 2,
+            "faithfulness": 0,
+            "gameplay": 0,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "做成了三消游戏/缺少道具/网格尺寸不符/缺少星星/冰块效果美术素材，增加了其他玩法功能",
+          "avg": "0.83"
+        }
+      ]
+    },
+    {
+      "platform": "Replit",
+      "items": [
+        {
+          "name": "对对连消",
+          "num": 1,
+          "scores": {
+            "stability": 2,
+            "visual": 0,
+            "audio": 0,
+            "faithfulness": 1,
+            "gameplay": 2,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "牧场元素风格缺失/消除后上方方块无下落填补/缺少星星/冰块效果美术素材",
+          "avg": "1.00"
+        }
+      ]
+    },
+    {
+      "platform": "aippy",
+      "items": [
+        {
+          "name": "对对连消",
+          "num": 1,
+          "scores": {
+            "stability": 0,
+            "visual": 0,
+            "audio": 0,
+            "faithfulness": 0,
+            "gameplay": 0,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "无法读取GDD,生成了毫无关系的内容",
+          "avg": "0.00"
+        }
+      ]
+    }
+  ]
+}
