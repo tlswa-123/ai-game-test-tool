@@ -169,7 +169,8 @@ function allPlats(){return[...DEF_PLATS,...custPlats]}
 const U=new URLSearchParams(location.search);
 if(U.get('token')){localStorage.setItem('gh_token',U.get('token'));const u=new URL(location);u.searchParams.delete('token');history.replaceState(null,'',u)}
 let mode=U.get('mode')||(TK?'admin':'summary');
-let cfg={name:U.get('name')||'',platforms:(U.get('platforms')||'').split(',').filter(Boolean),target:U.get('target')||'multi',cases:(U.get('cases')||'').split(',').filter(Boolean)};
+let cfg={name:U.get('name')||'',platforms:(U.get('platforms')||'').split(',').filter(Boolean),cases:(U.get('cases')||'').split(',').filter(Boolean)};
+let sideTab='gen'; // 'gen' or 'multi'
 let scores={},timers={},fields={},at={};
 async function ghPut(path,content){
   const tk=localStorage.getItem('gh_token')||TK;
@@ -219,49 +220,64 @@ function render(){
   else{document.getElementById('app').innerHTML=testerH();renderSide()}
 }
 function renderSide(){
-  const dims=cfg.target==='multi'?DIMS_3:DIMS_12;
-  const label=cfg.target==='multi'?'目标③ 多轮修改':'目标①② 生成效果';
-  let h='<h3>'+label+' 评分标准</h3><div style="margin-bottom:8px;padding:6px 8px;background:var(--abg);border-radius:5px;font-size:10px;color:var(--accent)"><b>档位：</b>0不可用 · 1及格 · 2好用 · 3超预期</div>';
+  const hasMulti=cfg.cases.some(c=>c==='m1');
+  const hasGen=cfg.cases.some(c=>c.startsWith('g')||c.startsWith('d'));
+  let h='';
+  if(hasGen&&hasMulti){
+    h+='<div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:8px"><button class="plat-tab'+(sideTab==='gen'?' active':'')+'" onclick="sideTab=\'gen\';renderSide()">目标①② 生成</button><button class="plat-tab'+(sideTab==='multi'?' active':'')+'" onclick="sideTab=\'multi\';renderSide()">目标③ 修改</button></div>';
+  } else if(hasMulti){sideTab='multi'} else {sideTab='gen'}
+  const dims=sideTab==='multi'?DIMS_3:DIMS_12;
+  const label=sideTab==='multi'?'目标③ 多轮修改':'目标①② 生成效果';
+  h+='<h3>'+label+' 评分标准</h3><div style="margin-bottom:8px;padding:6px 8px;background:var(--abg);border-radius:5px;font-size:10px;color:var(--accent)"><b>档位：</b>0不可用 · 1及格 · 2好用 · 3超预期</div>';
   dims.forEach(dim=>{h+='<h4>'+dim.name+'</h4>';if(dim.focus)h+='<div class="focus">'+dim.focus+'</div>';h+=dim.d.map((desc,i)=>'<div class="row"><b class="c'+i+'">'+i+'</b> '+desc+'</div>').join('')});
   document.getElementById('side').innerHTML=h;
 }
-function getDims(){return cfg.target==='multi'?DIMS_3:DIMS_12}
-function getShorts(){return cfg.target==='multi'?SHORT_3:SHORT_12}
+function getDimsFor(caseId){return caseId==='m1'?DIMS_3:DIMS_12}
+function getShortsFor(caseId){return caseId==='m1'?SHORT_3:SHORT_12}
 // ===== TESTER =====
 function testerH(){
   if(!cfg.platforms.length)return'<div class="s"><div class="st">请通过管理员链接进入</div></div>';
-  const dims=getDims(),shorts=getShorts();
-  let h='<div class="s"><div class="sh"><div class="sn" style="background:var(--dark)">i</div><div class="st">测评信息</div></div><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><span style="font-size:12px;color:var(--dim)">姓名：</span><input id="nameField" value="'+(cfg.name||'')+'" placeholder="请输入姓名（必填）" style="padding:6px 10px;border:1px solid var(--border);border-radius:5px;font-size:13px;width:150px" onchange="cfg.name=this.value.trim()"></div><div class="sd"><b>'+cfg.platforms.join(' / ')+'</b> | 目标'+(cfg.target==='multi'?'③多轮修改':cfg.target==='gdd'?'①GDD复刻':'②直接需求')+'</div></div>';
-  if(cfg.target==='multi'){
-    h+='<div class="s" style="border-color:var(--abr);background:var(--abg)"><div class="sh"><div class="sn" style="background:var(--dark)">0</div><div class="st">基础Prompt（每个平台先发）</div></div><div class="prompt-box" onclick="cp(this,\''+MULTI_BASE.replace(/'/g,"\\'")+'\')">' +MULTI_BASE+'</div></div>';
-    // Platform tabs
-    h+='<div class="plat-tabs" data-scene="multi">';
-    cfg.platforms.forEach((plat,pi)=>{h+='<button class="plat-tab'+(pi===0?' active':'')+'" onclick="switchPlatTab(this,\'multi\','+pi+')">'+plat+'</button>'});
-    h+='</div>';
-    cfg.platforms.forEach((plat,pi)=>{
-      const pk=plat.replace(/[^a-zA-Z0-9]/g,'_');
-      h+='<div class="plat-panel" data-scene="multi" data-pi="'+pi+'" style="'+(pi===0?'':'display:none')+'">';
-      MULTI_ROUNDS.forEach((r,ri)=>{
-        const base=pk+'_multi_r'+(ri+1);
-        h+='<div class="s"><div class="sh"><div class="sn">'+(ri+1)+'</div><div class="st">'+r.label+'</div></div>';
-        h+='<div class="prompt-box" onclick="cp(this,`'+r.p.replace(/`/g,"'")+'`)">'+r.p+'</div>';
-        h+=scoreSingle(base,dims,shorts);
-        h+='</div>';
-      });
-      h+='</div>';
-    });
-  } else {
-    const cases=cfg.target==='gdd'?GDD_CASES.filter(c=>cfg.cases.includes('g'+c.num)):DIRECT_CASES.filter(c=>cfg.cases.includes('d'+c.num));
-    cases.forEach((c,ci)=>{
-      h+='<div class="s"><div class="sh"><div class="sn">'+(ci+1)+'</div><div class="st">'+c.name+'</div>'+(c.diff?'<span style="margin-left:auto;font-size:10px;padding:2px 8px;border-radius:4px;background:'+(c.diff==='简单'||c.diff==='极简'?'var(--gbg);color:var(--green)':c.diff==='中等'?'var(--ybg);color:var(--yellow)':'var(--rbg);color:var(--red)')+'">'+c.diff+'</span>':'')+'</div>';
+  let h='<div class="s"><div class="sh"><div class="sn" style="background:var(--dark)">i</div><div class="st">测评信息</div></div><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><span style="font-size:12px;color:var(--dim)">姓名：</span><input id="nameField" value="'+(cfg.name||'')+'" placeholder="请输入姓名（必填）" style="padding:6px 10px;border:1px solid var(--border);border-radius:5px;font-size:13px;width:150px" onchange="cfg.name=this.value.trim()"></div><div class="sd"><b>'+cfg.platforms.join(' / ')+'</b></div></div>';
+  // Render all selected cases
+  let ci=0;
+  cfg.cases.forEach(caseId=>{
+    ci++;
+    if(caseId.startsWith('g')){
+      const num=parseInt(caseId.slice(1));const c=GDD_CASES.find(x=>x.num===num);if(!c)return;
+      const dims=DIMS_12,shorts=SHORT_12;
+      h+='<div class="s"><div class="sh"><div class="sn">'+ci+'</div><div class="st">'+c.name+'</div><span style="margin-left:4px;font-size:10px;padding:2px 6px;border-radius:4px;background:#ede9fe;color:#6d28d9">①GDD</span>'+(c.diff?'<span style="margin-left:auto;font-size:10px;padding:2px 8px;border-radius:4px;background:'+(c.diff==='简单'?'var(--gbg);color:var(--green)':c.diff==='中等'?'var(--ybg);color:var(--yellow)':'var(--rbg);color:var(--red)')+'">'+c.diff+'</span>':'')+'</div>';
       if(c.cat)h+='<div class="sd" style="margin-bottom:4px">'+c.cat+(c.style?' · '+c.style:'')+'</div>';
       if(c.gdd)h+='<a href="'+c.gdd+'" download style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);text-decoration:none;margin-bottom:6px;padding:4px 10px;border:1px solid var(--accent);border-radius:5px">下载GDD文档</a>';
-      const promptText=c.prompt||c.p||'';
-      if(promptText)h+='<div class="prompt-box" onclick="cp(this,`'+promptText.replace(/`/g,"'")+`\`)">` +promptText+'</div>';
-      h+=scoreGrid((cfg.target==='gdd'?'g':'d')+c.num,dims,shorts);
+      if(c.prompt)h+='<div class="prompt-box" onclick="cp(this,`'+c.prompt.replace(/`/g,"'")+`\`)">` +c.prompt+'</div>';
+      h+=scoreGrid(caseId,dims,shorts);
       h+='</div>';
-    });
-  }
+    }else if(caseId.startsWith('d')){
+      const num=parseInt(caseId.slice(1));const c=DIRECT_CASES.find(x=>x.num===num);if(!c)return;
+      const dims=DIMS_12,shorts=SHORT_12;
+      h+='<div class="s"><div class="sh"><div class="sn">'+ci+'</div><div class="st">'+c.name+'</div><span style="margin-left:4px;font-size:10px;padding:2px 6px;border-radius:4px;background:#e0f2fe;color:#0369a1">②需求</span>'+(c.diff?'<span style="margin-left:auto;font-size:10px;padding:2px 8px;border-radius:4px;background:'+(c.diff==='简单'||c.diff==='极简'?'var(--gbg);color:var(--green)':c.diff==='中等'?'var(--ybg);color:var(--yellow)':'var(--rbg);color:var(--red)')+'">'+c.diff+'</span>':'')+'</div>';
+      if(c.p)h+='<div class="prompt-box" onclick="cp(this,`'+c.p.replace(/`/g,"'")+`\`)">` +c.p+'</div>';
+      h+=scoreGrid(caseId,dims,shorts);
+      h+='</div>';
+    }else if(caseId==='m1'){
+      const dims=DIMS_3,shorts=SHORT_3;
+      h+='<div class="s" style="border-color:var(--abr);background:var(--abg)"><div class="sh"><div class="sn" style="background:var(--dark)">0</div><div class="st">③多轮修改 - 基础Prompt</div><span style="margin-left:4px;font-size:10px;padding:2px 6px;border-radius:4px;background:#fce7f3;color:#be185d">③修改</span></div><div class="prompt-box" onclick="cp(this,`'+MULTI_BASE.replace(/`/g,"'")+`\`)">` +MULTI_BASE+'</div></div>';
+      h+='<div class="plat-tabs" data-scene="multi">';
+      cfg.platforms.forEach((plat,pi)=>{h+='<button class="plat-tab'+(pi===0?' active':'')+'" onclick="switchPlatTab(this,\'multi\','+pi+')">'+plat+'</button>'});
+      h+='</div>';
+      cfg.platforms.forEach((plat,pi)=>{
+        const pk=plat.replace(/[^a-zA-Z0-9]/g,'_');
+        h+='<div class="plat-panel" data-scene="multi" data-pi="'+pi+'" style="'+(pi===0?'':'display:none')+'">';
+        MULTI_ROUNDS.forEach((r,ri)=>{
+          const base=pk+'_multi_r'+(ri+1);
+          h+='<div class="s"><div class="sh"><div class="sn">'+(ri+1)+'</div><div class="st">'+r.label+'</div></div>';
+          h+='<div class="prompt-box" onclick="cp(this,`'+r.p.replace(/`/g,"'")+'`)">'+r.p+'</div>';
+          h+=scoreSingle(base,dims,shorts);
+          h+='</div>';
+        });
+        h+='</div>';
+      });
+    }
+  });
   h+='<div class="submit-bar"><span style="font-size:9px;color:var(--dim)">全部打完后提交</span><button style="padding:6px 12px;background:var(--bg);border:1px solid var(--border);border-radius:5px;font-size:11px;cursor:pointer" onclick="expMyExcel()">Excel</button><button style="padding:6px 12px;background:var(--bg);border:1px solid var(--border);border-radius:5px;font-size:11px;cursor:pointer" onclick="expMyHtml()">HTML</button><button class="submit-btn" id="subBtn" onclick="doSubmit()">提交</button></div>';
   return h;
 }
@@ -316,28 +332,31 @@ function adminH(){
   assigns.forEach((a,i)=>{
     const link=mkLink(a);
     h+='<div class="ac"><div class="rm" onclick="rmA('+i+')">x</div>';
-    h+='<div class="ar"><input placeholder="姓名" value="'+(a.name||'')+'" style="width:80px" onchange="assigns['+i+'].name=this.value;saveA()"><select onchange="assigns['+i+'].target=this.value;saveA();render()"><option value="gdd"'+(a.target==='gdd'?' selected':'')+'>①GDD复刻</option><option value="direct"'+(a.target==='direct'?' selected':'')+'>②直接需求</option><option value="multi"'+(a.target==='multi'?' selected':'')+'>③多轮修改</option></select></div>';
+    h+='<div class="ar"><input placeholder="姓名" value="'+(a.name||'')+'" style="width:120px" onchange="assigns['+i+'].name=this.value;saveA()"></div>';
     h+='<div class="lbl">平台<span onclick="assigns['+i+'].platforms=[...allPlats()];saveA();render()">全选</span><span class="cl" onclick="assigns['+i+'].platforms=[];saveA();render()">清空</span></div>';
     h+='<div class="cg">'+allPlats().map(p=>'<label><input type="checkbox" '+((a.platforms||[]).includes(p)?'checked':'')+' onchange="togA('+i+',\'platforms\',\''+p+'\')">'+p+'<span class="x" onclick="event.preventDefault();rmPlat(\''+p+'\')">x</span></label>').join('')+'</div>';
     h+='<div style="display:flex;gap:3px;margin-top:2px"><input id="np'+i+'" placeholder="+自定义" style="padding:3px 5px;border:1px solid var(--border);border-radius:3px;font-size:9px;width:80px"><button style="padding:2px 5px;background:var(--abg);border:1px solid var(--abr);border-radius:3px;font-size:8px;cursor:pointer;color:var(--accent)" onclick="addP('+i+')">+</button></div>';
-    if(a.target==='gdd'){
-      h+='<div class="lbl">Case<span onclick="assigns['+i+'].cases=GDD_CASES.map(c=>\'g\'+c.num);saveA();render()">全选</span><span class="cl" onclick="assigns['+i+'].cases=[];saveA();render()">清空</span></div>';
-      h+='<div class="cg">'+GDD_CASES.map(c=>{const id='g'+c.num;return'<label><input type="checkbox" '+((a.cases||[]).includes(id)?'checked':'')+' onchange="togA('+i+',\'cases\',\''+id+'\')">'+c.num+'.'+c.name+'</label>'}).join('')+'</div>';
-    }else if(a.target==='direct'){
-      h+='<div class="lbl">Case<span onclick="assigns['+i+'].cases=DIRECT_CASES.map(c=>\'d\'+c.num);saveA();render()">全选</span><span class="cl" onclick="assigns['+i+'].cases=[];saveA();render()">清空</span></div>';
-      h+='<div class="cg">'+DIRECT_CASES.map(c=>{const id='d'+c.num;return'<label><input type="checkbox" '+((a.cases||[]).includes(id)?'checked':'')+' onchange="togA('+i+',\'cases\',\''+id+'\')">'+c.num+'.'+c.name+'</label>'}).join('')+'</div>';
-    }
-    h+='<div class="lo"><span style="flex:1">'+(link||'填姓名+选平台')+'</span>'+(link?'<button class="cp" onclick="navigator.clipboard.writeText(\''+link+'\');toast(\'已复制\')">复制</button>':'')+'</div></div>';
+    h+='<div class="lbl">Case（混选）<span onclick="assigns['+i+'].cases=allCaseIds();saveA();render()">全选</span><span class="cl" onclick="assigns['+i+'].cases=[];saveA();render()">清空</span></div>';
+    h+='<div class="cg">';
+    h+='<span style="font-size:9px;font-weight:700;color:#6d28d9;width:100%">①GDD:</span>';
+    h+=GDD_CASES.map(c=>{const id='g'+c.num;return'<label><input type="checkbox" '+((a.cases||[]).includes(id)?'checked':'')+' onchange="togA('+i+',\'cases\',\''+id+'\')">'+c.num+'.'+c.name+'</label>'}).join('');
+    h+='<span style="font-size:9px;font-weight:700;color:#0369a1;width:100%;margin-top:3px">②需求:</span>';
+    h+=DIRECT_CASES.map(c=>{const id='d'+c.num;return'<label><input type="checkbox" '+((a.cases||[]).includes(id)?'checked':'')+' onchange="togA('+i+',\'cases\',\''+id+'\')">'+c.num+'.'+c.name+'</label>'}).join('');
+    h+='<span style="font-size:9px;font-weight:700;color:#be185d;width:100%;margin-top:3px">③修改:</span>';
+    h+='<label><input type="checkbox" '+((a.cases||[]).includes('m1')?'checked':'')+' onchange="togA('+i+',\'cases\',\'m1\')">多轮修改(3轮)</label>';
+    h+='</div>';
+    h+='<div class="lo"><span style="flex:1">'+(link||'填姓名+选平台+选case')+'</span>'+(link?'<button class="cp" onclick="navigator.clipboard.writeText(\''+link+'\');toast(\'已复制\')">复制</button>':'')+'</div></div>';
   });
   return h;
 }
-function addA(){assigns.push({name:'',platforms:[...DEF_PLATS],cases:[],target:'gdd'});saveA();render()}
+function allCaseIds(){return[...GDD_CASES.map(c=>'g'+c.num),...DIRECT_CASES.map(c=>'d'+c.num),'m1']}
+function addA(){assigns.push({name:'',platforms:[...DEF_PLATS],cases:allCaseIds()});saveA();render()}
 function rmA(i){assigns.splice(i,1);saveA();render()}
 function togA(i,f,v){const a=assigns[i];if(!a[f])a[f]=[];const x=a[f].indexOf(v);if(x>=0)a[f].splice(x,1);else a[f].push(v);saveA();render()}
 function rmPlat(p){const i=custPlats.indexOf(p);if(i>=0){custPlats.splice(i,1);localStorage.setItem('ep4',JSON.stringify(custPlats));assigns.forEach(a=>{if(a.platforms){const x=a.platforms.indexOf(p);if(x>=0)a.platforms.splice(x,1)}});saveA();render()}}
 function addP(i){const el=document.getElementById('np'+i);const n=el.value.trim();if(!n)return;if(!custPlats.includes(n)&&!DEF_PLATS.includes(n)){custPlats.push(n);localStorage.setItem('ep4',JSON.stringify(custPlats))}if(!assigns[i].platforms)assigns[i].platforms=[];if(!assigns[i].platforms.includes(n))assigns[i].platforms.push(n);saveA();render()}
 function saveA(){localStorage.setItem('ea_v4',JSON.stringify(assigns))}
-function mkLink(a){if(!a.name||!(a.platforms||[]).length)return'';const tk=localStorage.getItem('gh_token')||'';let url=BASE+'?token='+encodeURIComponent(tk)+'&name='+encodeURIComponent(a.name)+'&platforms='+encodeURIComponent(a.platforms.join(','))+'&target='+a.target;if(a.target!=='multi')url+='&cases='+encodeURIComponent((a.cases||[]).join(','));return url+'&mode=tester'}
+function mkLink(a){if(!a.name||!(a.platforms||[]).length||!(a.cases||[]).length)return'';const tk=localStorage.getItem('gh_token')||'';return BASE+'?token='+encodeURIComponent(tk)+'&name='+encodeURIComponent(a.name)+'&platforms='+encodeURIComponent(a.platforms.join(','))+'&cases='+encodeURIComponent((a.cases||[]).join(','))+'&mode=tester'}
 // ===== SUBMIT =====
 async function doSubmit(){
   const nameEl=document.getElementById('nameField');if(nameEl)cfg.name=nameEl.value.trim();if(!cfg.name){toast('请输入姓名');return}
@@ -347,31 +366,32 @@ async function doSubmit(){
   btn.textContent=ok?'OK':'fail';if(ok)toast('已提交');else btn.disabled=false;
 }
 function getMyData(){
-  const dims=getDims();
-  const result={name:cfg.name,platforms:cfg.platforms,target:cfg.target,time:new Date().toISOString(),data:[]};
+  const result={name:cfg.name,platforms:cfg.platforms,cases:cfg.cases,time:new Date().toISOString(),data:[]};
   cfg.platforms.forEach(plat=>{
     const pk=plat.replace(/[^a-zA-Z0-9]/g,'_');
     const pd={platform:plat,items:[]};
-    if(cfg.target==='multi'){
-      MULTI_ROUNDS.forEach((r,ri)=>{
-        const base=pk+'_multi_r'+(ri+1);
-        const item={scene:'多轮修改',round:ri+1,roundLabel:r.label,scores:{},link:fields[base+'_link']||'',note:fields[base+'_n']||'',imgs:fields[base+'_imgs']||[]};
-        dims.forEach(d=>{item.scores[d.k]=scores[base+'_'+d.k]});
+    cfg.cases.forEach(caseId=>{
+      if(caseId==='m1'){
+        MULTI_ROUNDS.forEach((r,ri)=>{
+          const base=pk+'_multi_r'+(ri+1);
+          const item={type:'multi',round:ri+1,roundLabel:r.label,scores:{},link:fields[base+'_link']||'',note:fields[base+'_n']||'',imgs:fields[base+'_imgs']||[]};
+          DIMS_3.forEach(d=>{item.scores[d.k]=scores[base+'_'+d.k]});
+          const v=Object.values(item.scores).filter(x=>x!==undefined);
+          item.avg=v.length?(v.reduce((a,b)=>a+b,0)/v.length).toFixed(2):'';
+          pd.items.push(item);
+        });
+      }else{
+        const base=pk+'_'+caseId;
+        const isGdd=caseId.startsWith('g');
+        const num=parseInt(caseId.slice(1));
+        const cObj=isGdd?GDD_CASES.find(x=>x.num===num):DIRECT_CASES.find(x=>x.num===num);
+        const item={type:isGdd?'gdd':'direct',name:cObj?cObj.name:'',caseId,scores:{},link:fields[base+'_link']||'',note:fields[base+'_n']||'',imgs:fields[base+'_imgs']||[]};
+        DIMS_12.forEach(d=>{item.scores[d.k]=scores[base+'_'+d.k]});
         const v=Object.values(item.scores).filter(x=>x!==undefined);
         item.avg=v.length?(v.reduce((a,b)=>a+b,0)/v.length).toFixed(2):'';
         pd.items.push(item);
-      });
-    }else{
-      const list=cfg.target==='gdd'?GDD_CASES.filter(cc=>cfg.cases.includes('g'+cc.num)):DIRECT_CASES.filter(cc=>cfg.cases.includes('d'+cc.num));
-      list.forEach(cc=>{
-        const base=pk+'_'+(cfg.target==='gdd'?'g':'d')+cc.num;
-        const item={name:cc.name,num:cc.num,scores:{},link:fields[base+'_link']||'',note:fields[base+'_n']||'',imgs:fields[base+'_imgs']||[]};
-        dims.forEach(d=>{item.scores[d.k]=scores[base+'_'+d.k]});
-        const v=Object.values(item.scores).filter(x=>x!==undefined);
-        item.avg=v.length?(v.reduce((a,b)=>a+b,0)/v.length).toFixed(2):'';
-        pd.items.push(item);
-      });
-    }
+      }
+    });
     result.data.push(pd);
   });
   return result;
@@ -383,11 +403,18 @@ async function loadSum(){
   for(const f of files){if(!f.name.endsWith('.json')||f.name==='manifest.json')continue;const d=await ghGet('data/'+f.name);if(d){all.push(d);fnames.push(f.name)}}
   window._files=fnames;
   if(!all.length){document.getElementById('app').innerHTML=`<div class="s"><div class="sd">${TK?"暂无提交数据":"请输入Token查看数据"}</div><div style="margin-top:8px"><input type="password" placeholder="粘贴Token" value="${TK}" style="width:100%;padding:8px;border:1px solid #e7e5e4;border-radius:6px;font-size:12px" onchange="localStorage.setItem('gh_token',this.value);location.reload()"></div></div>`;return}
-  const byTarget={multi:[],gdd:[],direct:[]};
-  all.forEach(d=>{if(byTarget[d.target])byTarget[d.target].push(d)});
+  const byTarget={multi:[],gen:[]};
+  all.forEach(d=>{
+    const hasMulti=(d.data||[]).some(pd=>(pd.items||[]).some(it=>it.type==='multi'));
+    const hasGen=(d.data||[]).some(pd=>(pd.items||[]).some(it=>it.type==='gdd'||it.type==='direct'));
+    if(hasMulti)byTarget.multi.push(d);
+    if(hasGen)byTarget.gen.push(d);
+    // legacy support
+    if(d.target==='multi'&&!hasMulti)byTarget.multi.push(d);
+    if((d.target==='gdd'||d.target==='direct')&&!hasGen)byTarget.gen.push(d);
+  });
   let h='<div class="s"><div class="sh"><div class="sn" style="background:var(--green)">'+all.length+'</div><div class="st">'+all.length+' 份提交</div><button class="refresh-btn" onclick="loadSum()" style="margin-left:auto">刷新</button></div></div>';
-  if(byTarget.gdd.length) h+=renderTargetAnalysis('① GDD复刻',byTarget.gdd,DIMS_12);
-  if(byTarget.direct.length) h+=renderTargetAnalysis('② 直接需求',byTarget.direct,DIMS_12);
+  if(byTarget.gen.length) h+=renderTargetAnalysis('①② 生成效果',byTarget.gen,DIMS_12);
   if(byTarget.multi.length) h+=renderTargetAnalysis('③ 多轮修改',byTarget.multi,DIMS_3);
   h+='<div id="submitList"></div>';
   h+='<div class="s" style="display:flex;gap:10px"><button class="tab active" style="border:none" onclick="expExcel()">导出Excel</button><button class="tab" style="border:none" onclick="expHtml()">导出HTML报告</button></div>';
@@ -476,17 +503,31 @@ function showAnalysis(aid,type){
 }
 function viewSubmit(idx){
   const d=window._d[idx];if(!d)return;
-  const dims=d.target==='multi'?DIMS_3:DIMS_12;
   let h='<h2>'+d.name+' 的提交详情</h2><div style="font-size:11px;color:var(--dim);margin-bottom:12px">'+new Date(d.time).toLocaleString('zh-CN')+'</div>';
   (d.data||[]).forEach(pd=>{
     h+='<div style="margin:12px 0 6px;font-size:15px;font-weight:700;color:var(--accent);border-left:3px solid var(--accent);padding-left:10px">'+pd.platform+'</div>';
-    h+='<table class="dt"><tr><th>项目</th>';dims.forEach(dim=>{h+='<th>'+dim.name+'</th>'});h+='<th>均分</th><th>备注</th></tr>';
-    (pd.items||[]).forEach(item=>{
-      h+='<tr><td><b>'+(item.name||item.roundLabel||'轮'+item.round)+'</b></td>';
-      dims.forEach(dim=>{const v=(item.scores||{})[dim.k];const color=v>=2.5?'var(--green)':v>=1.5?'var(--accent)':'var(--red)';h+='<td style="font-weight:700;color:'+(v!==undefined&&v!==null?color:'var(--dim)')+'">'+(v!==undefined&&v!==null?v:'-')+'</td>'});
-      h+='<td style="font-weight:700;color:var(--accent)">'+(item.avg||'-')+'</td><td style="font-size:11px;text-align:left">'+(item.note||'-')+'</td></tr>';
-      if((item.imgs||[]).length){h+='<tr><td colspan="'+(dims.length+3)+'"><div style="display:flex;gap:6px;flex-wrap:wrap;padding:4px 0">';item.imgs.forEach(src=>{h+='<img src="'+src+'" style="width:80px;height:60px;object-fit:cover;border-radius:4px;border:1px solid var(--border);cursor:pointer" onclick="viewImg(this.src)">'});h+='</div></td></tr>'}
-    });h+='</table>';
+    // Group items by dims type
+    const genItems=(pd.items||[]).filter(it=>it.type!=='multi');
+    const multiItems=(pd.items||[]).filter(it=>it.type==='multi');
+    if(genItems.length){
+      h+='<table class="dt"><tr><th>项目</th>';DIMS_12.forEach(dim=>{h+='<th>'+dim.name+'</th>'});h+='<th>均分</th><th>备注</th></tr>';
+      genItems.forEach(item=>{
+        h+='<tr><td><b>'+(item.name||item.caseId||'-')+'</b></td>';
+        DIMS_12.forEach(dim=>{const v=(item.scores||{})[dim.k];const color=v>=2.5?'var(--green)':v>=1.5?'var(--accent)':'var(--red)';h+='<td style="font-weight:700;color:'+(v!==undefined&&v!==null?color:'var(--dim)')+'">'+(v!==undefined&&v!==null?v:'-')+'</td>'});
+        h+='<td style="font-weight:700;color:var(--accent)">'+(item.avg||'-')+'</td><td style="font-size:11px;text-align:left">'+(item.note||'-')+'</td></tr>';
+        if((item.imgs||[]).length){h+='<tr><td colspan="'+(DIMS_12.length+3)+'"><div style="display:flex;gap:6px;flex-wrap:wrap;padding:4px 0">';item.imgs.forEach(src=>{h+='<img src="'+src+'" style="width:80px;height:60px;object-fit:cover;border-radius:4px;border:1px solid var(--border);cursor:pointer" onclick="viewImg(this.src)">'});h+='</div></td></tr>'}
+      });h+='</table>';
+    }
+    if(multiItems.length){
+      h+='<div style="font-size:12px;font-weight:600;color:#be185d;margin:8px 0 4px">③多轮修改</div>';
+      h+='<table class="dt"><tr><th>轮次</th>';DIMS_3.forEach(dim=>{h+='<th>'+dim.name+'</th>'});h+='<th>均分</th><th>备注</th></tr>';
+      multiItems.forEach(item=>{
+        h+='<tr><td><b>'+(item.roundLabel||'轮'+item.round)+'</b></td>';
+        DIMS_3.forEach(dim=>{const v=(item.scores||{})[dim.k];const color=v>=2.5?'var(--green)':v>=1.5?'var(--accent)':'var(--red)';h+='<td style="font-weight:700;color:'+(v!==undefined&&v!==null?color:'var(--dim)')+'">'+(v!==undefined&&v!==null?v:'-')+'</td>'});
+        h+='<td style="font-weight:700;color:var(--accent)">'+(item.avg||'-')+'</td><td style="font-size:11px;text-align:left">'+(item.note||'-')+'</td></tr>';
+        if((item.imgs||[]).length){h+='<tr><td colspan="'+(DIMS_3.length+3)+'"><div style="display:flex;gap:6px;flex-wrap:wrap;padding:4px 0">';item.imgs.forEach(src=>{h+='<img src="'+src+'" style="width:80px;height:60px;object-fit:cover;border-radius:4px;border:1px solid var(--border);cursor:pointer" onclick="viewImg(this.src)">'});h+='</div></td></tr>'}
+      });h+='</table>';
+    }
   });
   h+='<button style="margin-top:12px;padding:6px 14px;border:1px solid var(--border);background:var(--card);border-radius:5px;font-size:12px;cursor:pointer" onclick="loadSum()">返回</button>';
   document.getElementById('app').innerHTML=h;
