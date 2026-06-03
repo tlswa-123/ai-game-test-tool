@@ -1,0 +1,156 @@
+{
+  "name": "预评分2",
+  "platforms": [
+    "我们+Claude4.7",
+    "我们+GLM5.1",
+    "WB+Claude4.7",
+    "WB+GLM5.1",
+    "Astrocade",
+    "Replit",
+    "aippy"
+  ],
+  "target": "gdd",
+  "time": "2026-05-29T08:14:32.680Z",
+  "data": [
+    {
+      "platform": "我们+Claude4.7",
+      "items": [
+        {
+          "name": "奇妙不停消",
+          "num": 2,
+          "scores": {
+            "stability": 0,
+            "visual": 0,
+            "audio": 0,
+            "faithfulness": 0,
+            "gameplay": 0,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "无法发送MD文件/文本",
+          "avg": "0.00"
+        }
+      ]
+    },
+    {
+      "platform": "我们+GLM5.1",
+      "items": [
+        {
+          "name": "奇妙不停消",
+          "num": 2,
+          "scores": {
+            "stability": 0,
+            "visual": 0,
+            "audio": 0,
+            "faithfulness": 0,
+            "gameplay": 0,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "无法发送MD文件/文本",
+          "avg": "0.00"
+        }
+      ]
+    },
+    {
+      "platform": "WB+Claude4.7",
+      "items": [
+        {
+          "name": "奇妙不停消",
+          "num": 2,
+          "scores": {
+            "stability": 3,
+            "visual": 2,
+            "audio": 0,
+            "faithfulness": 3,
+            "gameplay": 3,
+            "subjective": 2
+          },
+          "time": 0,
+          "note": "关卡牌数网格都正确/同轴牌可跟随/麻将风格有轻微偏差",
+          "avg": "2.17"
+        }
+      ]
+    },
+    {
+      "platform": "WB+GLM5.1",
+      "items": [
+        {
+          "name": "奇妙不停消",
+          "num": 2,
+          "scores": {
+            "stability": 0,
+            "visual": 0,
+            "audio": 0,
+            "faithfulness": 1,
+            "gameplay": 0,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "美术素材严重不一致/道具数值异常/关卡牌数网格错误",
+          "avg": "0.17"
+        }
+      ]
+    },
+    {
+      "platform": "Astrocade",
+      "items": [
+        {
+          "name": "奇妙不停消",
+          "num": 2,
+          "scores": {
+            "stability": 0,
+            "visual": 0,
+            "audio": 0,
+            "faithfulness": 0,
+            "gameplay": 0,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "第一次失败/第二次也失败 无法里面MD里面的内容",
+          "avg": "0.00"
+        }
+      ]
+    },
+    {
+      "platform": "Replit",
+      "items": [
+        {
+          "name": "奇妙不停消",
+          "num": 2,
+          "scores": {
+            "stability": 1,
+            "visual": 2,
+            "audio": 0,
+            "faithfulness": 1,
+            "gameplay": 0,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "无法两两消除/无法同轴跟随/没有办法通关/玩法核心出问题/麻将风格有轻微偏差",
+          "avg": "0.83"
+        }
+      ]
+    },
+    {
+      "platform": "aippy",
+      "items": [
+        {
+          "name": "奇妙不停消",
+          "num": 2,
+          "scores": {
+            "stability": 0,
+            "visual": 0,
+            "audio": 0,
+            "faithfulness": 0,
+            "gameplay": 0,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "无法理解MD文件",
+          "avg": "0.00"
+        }
+      ]
+    }
+  ]
+}
