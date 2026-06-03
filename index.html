@@ -117,7 +117,7 @@ table.dt th{background:var(--bg);font-size:11px;font-weight:600;color:var(--dim)
 <body>
 <div class="w">
 <div class="main">
-<div class="hd"><div class="badge">v4.0</div><h1 id="title">AI 游戏测评</h1><p id="sub"></p></div>
+<div class="hd"><div class="badge">v4.0</div><h1 id="title">AI 游戏测评</h1><p id="sub">工蜂版</p></div>
 <div class="tabs" id="tabs"></div>
 <div id="app"></div>
 </div>
@@ -125,7 +125,8 @@ table.dt th{background:var(--bg);font-size:11px;font-weight:600;color:var(--dim)
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const REPO='tlswa-123/ai-game-test-tool',TK=localStorage.getItem('gh_token')||new URLSearchParams(location.search).get('token')||'';
+const WOA_PROJ=1789102,WOA_API='https://git.woa.com/api/v3',WOA_REPO='arieljin/test-tool';
+const TK=localStorage.getItem('woa_token')||new URLSearchParams(location.search).get('token')||'';
 const BASE=location.origin+location.pathname;
 // ===== RUBRICS =====
 const DIMS_12=[
@@ -167,45 +168,55 @@ const DEF_PLATS=['我们+Claude4.7','我们+GLM5.1','WB+Claude4.7','WB+GLM5.1'];
 let custPlats=JSON.parse(localStorage.getItem('ep4')||'[]');
 function allPlats(){return[...DEF_PLATS,...custPlats]}
 const U=new URLSearchParams(location.search);
-if(U.get('token')){localStorage.setItem('gh_token',U.get('token'));const u=new URL(location);u.searchParams.delete('token');history.replaceState(null,'',u)}
+if(U.get('token')){localStorage.setItem('woa_token',U.get('token'));const u=new URL(location);u.searchParams.delete('token');history.replaceState(null,'',u)}
 let mode=U.get('mode')||(TK?'admin':'summary');
 let cfg={name:U.get('name')||'',platforms:(U.get('platforms')||'').split(',').filter(Boolean),cases:(U.get('cases')||'').split(',').filter(Boolean)};
 let sideTab='gen'; // 'gen' or 'multi'
 let scores={},timers={},fields={},at={};
-async function ghPut(path,content){
-  const tk=localStorage.getItem('gh_token')||TK;
-  let sha='';
-  try{const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`,{headers:{Authorization:'token '+tk}});if(r.ok)sha=(await r.json()).sha}catch(e){}
-  const body={message:'submit',content:btoa(unescape(encodeURIComponent(content)))};
-  if(sha)body.sha=sha;
-  const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`,{method:'PUT',headers:{Authorization:'token '+tk,'Content-Type':'application/json'},body:JSON.stringify(body)});
+async function woaPut(path,content){
+  const tk=localStorage.getItem('woa_token')||TK;
+  const hdr={'PRIVATE-TOKEN':tk,'Content-Type':'application/json'};
+  // Check if file exists → PUT to update, else POST to create
+  let exists=false;
+  try{const r=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/files?file_path=${encodeURIComponent(path)}&ref=master`,{headers:{'PRIVATE-TOKEN':tk}});if(r.ok)exists=true}catch(e){}
+  const body={file_path:path,branch_name:'master',content,commit_message:'submit'};
+  const method=exists?'PUT':'POST';
+  const r=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/files`,{method,headers:hdr,body:JSON.stringify(body)});
   if(r.ok){
     try{
       const mPath='data/manifest.json';
-      const mr=await fetch(`https://api.github.com/repos/${REPO}/contents/${mPath}`,{headers:{Authorization:'token '+tk}});
-      let mSha='',files=[];
-      if(mr.ok){const md=await mr.json();mSha=md.sha;files=JSON.parse(decodeURIComponent(escape(atob(md.content))))}
+      let mExists=false,mFiles=[];
+      try{const mr=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/files?file_path=${encodeURIComponent(mPath)}&ref=master`,{headers:{'PRIVATE-TOKEN':tk}});if(mr.ok){mExists=true;const md=await mr.json();mFiles=JSON.parse(decodeURIComponent(escape(atob(md.content))))}}catch(e){}
       const fname=path.split('/').pop();
-      if(!files.includes(fname))files.push(fname);
-      const mBody={message:'manifest',content:btoa(unescape(encodeURIComponent(JSON.stringify(files))))};
-      if(mSha)mBody.sha=mSha;
-      await fetch(`https://api.github.com/repos/${REPO}/contents/${mPath}`,{method:'PUT',headers:{Authorization:'token '+tk,'Content-Type':'application/json'},body:JSON.stringify(mBody)});
+      if(!mFiles.includes(fname))mFiles.push(fname);
+      const mBody={file_path:mPath,branch_name:'master',content:JSON.stringify(mFiles),commit_message:'manifest'};
+      const mMethod=mExists?'PUT':'POST';
+      await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/files`,{method:mMethod,headers:hdr,body:JSON.stringify(mBody)});
     }catch(e){}
   }
   return r.ok;
 }
-async function ghList(d){
-  try{const r=await fetch(`https://raw.githubusercontent.com/${REPO}/main/${d}/manifest.json?t=`+Date.now());if(r.ok){const files=await r.json();return files.map(name=>({name}))}}catch(e){}
-  const tk=localStorage.getItem('gh_token')||'';const h=tk?{Authorization:'token '+tk}:{};
-  const r2=await fetch(`https://api.github.com/repos/${REPO}/contents/${d}`,{headers:h});
-  return r2.ok?r2.json():[];
+async function woaList(d){
+  const tk=localStorage.getItem('woa_token')||TK;
+  const hdr=tk?{'PRIVATE-TOKEN':tk}:{};
+  try{
+    // Try manifest first
+    try{const r=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/files?file_path=${encodeURIComponent(d+'/manifest.json')}&ref=master`,{headers:hdr});
+    if(r.ok){const md=await r.json();const files=JSON.parse(decodeURIComponent(escape(atob(md.content))));return files.map(name=>({name}))}}catch(e){}
+    // Fallback: list tree
+    const r=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/tree?path=${encodeURIComponent(d)}&ref=master`,{headers:hdr});
+    if(r.ok){const tree=await r.json();return tree.filter(f=>f.type==='blob'&&f.name.endsWith('.json')&&f.name!=='manifest.json').map(f=>({name:f.name}))}
+  }catch(e){}
+  return[];
 }
-async function ghGet(p){
-  try{const encoded=p.split('/').map(s=>encodeURIComponent(s)).join('/');const r=await fetch(`https://raw.githubusercontent.com/${REPO}/main/${encoded}?t=`+Date.now());if(r.ok){const t=await r.text();return JSON.parse(t)}}catch(e){}
-  const tk=localStorage.getItem('gh_token')||'';const h=tk?{Authorization:'token '+tk}:{};
-  const encoded2=p.split('/').map(s=>encodeURIComponent(s)).join('/');
-  const r2=await fetch(`https://api.github.com/repos/${REPO}/contents/${encoded2}`,{headers:h});
-  if(!r2.ok)return null;const d=await r2.json();return JSON.parse(decodeURIComponent(escape(atob(d.content))));
+async function woaGet(p){
+  const tk=localStorage.getItem('woa_token')||TK;
+  const hdr=tk?{'PRIVATE-TOKEN':tk}:{};
+  try{
+    const r=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/files?file_path=${encodeURIComponent(p)}&ref=master`,{headers:hdr});
+    if(r.ok){const d=await r.json();return JSON.parse(decodeURIComponent(escape(atob(d.content))))}
+  }catch(e){}
+  return null;
 }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2e3)}
 function cp(el,t){navigator.clipboard.writeText(t);el.classList.add('copied');setTimeout(()=>el.classList.remove('copied'),1e3)}
@@ -327,7 +338,7 @@ function scoreGrid(itemKey,dims,shorts){
 // ===== ADMIN =====
 let assigns=JSON.parse(localStorage.getItem('ea_v4')||'[]');
 function adminH(){
-  let h='<div class="s"><div class="sd"><b>Token:</b></div><input type="password" value="'+(localStorage.getItem('gh_token')||'')+'" style="width:100%;padding:5px;border:1px solid var(--border);border-radius:4px;font-size:10px" onchange="localStorage.setItem(\'gh_token\',this.value);toast(\'ok\')"><button style="margin-top:6px;padding:5px 12px;background:var(--dark);color:#fff;border:none;border-radius:5px;font-size:11px;cursor:pointer" onclick="const tk=localStorage.getItem(\'gh_token\')||\'\';const url=location.origin+location.pathname+\'?token=\'+encodeURIComponent(tk);navigator.clipboard.writeText(url);toast(\'已复制管理链接\')">复制管理链接</button></div>';
+  let h='<div class="s"><div class="sd"><b>工蜂Token:</b></div><input type="password" value="'+(localStorage.getItem('woa_token')||'')+'" style="width:100%;padding:5px;border:1px solid var(--border);border-radius:4px;font-size:10px" onchange="localStorage.setItem(\'woa_token\',this.value);toast(\'ok\')"><button style="margin-top:6px;padding:5px 12px;background:var(--dark);color:#fff;border:none;border-radius:5px;font-size:11px;cursor:pointer" onclick="const tk=localStorage.getItem(\'woa_token\')||\'\';const url=location.origin+location.pathname+\'?token=\'+encodeURIComponent(tk);navigator.clipboard.writeText(url);toast(\'已复制管理链接\')">复制管理链接</button></div>';
   h+='<div class="s"><button class="tab active" style="border:none" onclick="addA()">+ 新增测评人</button></div>';
   assigns.forEach((a,i)=>{
     const link=mkLink(a);
@@ -356,13 +367,13 @@ function togA(i,f,v){const a=assigns[i];if(!a[f])a[f]=[];const x=a[f].indexOf(v)
 function rmPlat(p){const i=custPlats.indexOf(p);if(i>=0){custPlats.splice(i,1);localStorage.setItem('ep4',JSON.stringify(custPlats));assigns.forEach(a=>{if(a.platforms){const x=a.platforms.indexOf(p);if(x>=0)a.platforms.splice(x,1)}});saveA();render()}}
 function addP(i){const el=document.getElementById('np'+i);const n=el.value.trim();if(!n)return;if(!custPlats.includes(n)&&!DEF_PLATS.includes(n)){custPlats.push(n);localStorage.setItem('ep4',JSON.stringify(custPlats))}if(!assigns[i].platforms)assigns[i].platforms=[];if(!assigns[i].platforms.includes(n))assigns[i].platforms.push(n);saveA();render()}
 function saveA(){localStorage.setItem('ea_v4',JSON.stringify(assigns))}
-function mkLink(a){if(!a.name||!(a.platforms||[]).length||!(a.cases||[]).length)return'';const tk=localStorage.getItem('gh_token')||'';return BASE+'?token='+encodeURIComponent(tk)+'&name='+encodeURIComponent(a.name)+'&platforms='+encodeURIComponent(a.platforms.join(','))+'&cases='+encodeURIComponent((a.cases||[]).join(','))+'&mode=tester'}
+function mkLink(a){if(!a.name||!(a.platforms||[]).length||!(a.cases||[]).length)return'';const tk=localStorage.getItem('woa_token')||'';return BASE+'?token='+encodeURIComponent(tk)+'&name='+encodeURIComponent(a.name)+'&platforms='+encodeURIComponent(a.platforms.join(','))+'&cases='+encodeURIComponent((a.cases||[]).join(','))+'&mode=tester'}
 // ===== SUBMIT =====
 async function doSubmit(){
   const nameEl=document.getElementById('nameField');if(nameEl)cfg.name=nameEl.value.trim();if(!cfg.name){toast('请输入姓名');return}
   const btn=document.getElementById('subBtn');btn.textContent='...';btn.disabled=true;
   const result=getMyData();
-  const ok=await ghPut('data/'+cfg.name+'_'+Date.now()+'.json',JSON.stringify(result,null,2));
+  const ok=await woaPut('data/'+cfg.name+'_'+Date.now()+'.json',JSON.stringify(result,null,2));
   btn.textContent=ok?'OK':'fail';if(ok)toast('已提交');else btn.disabled=false;
 }
 function getMyData(){
@@ -399,10 +410,10 @@ function getMyData(){
 // ===== SUMMARY =====
 async function loadSum(){
   try{
-  const files=await ghList('data');const all=[];const fnames=[];
-  for(const f of files){if(!f.name.endsWith('.json')||f.name==='manifest.json')continue;const d=await ghGet('data/'+f.name);if(d){all.push(d);fnames.push(f.name)}}
+  const files=await woaList('data');const all=[];const fnames=[];
+  for(const f of files){if(!f.name.endsWith('.json')||f.name==='manifest.json')continue;const d=await woaGet('data/'+f.name);if(d){all.push(d);fnames.push(f.name)}}
   window._files=fnames;
-  if(!all.length){document.getElementById('app').innerHTML=`<div class="s"><div class="sd">${TK?"暂无提交数据":"请输入Token查看数据"}</div><div style="margin-top:8px"><input type="password" placeholder="粘贴Token" value="${TK}" style="width:100%;padding:8px;border:1px solid #e7e5e4;border-radius:6px;font-size:12px" onchange="localStorage.setItem('gh_token',this.value);location.reload()"></div></div>`;return}
+  if(!all.length){document.getElementById('app').innerHTML=`<div class="s"><div class="sd">${TK?"暂无提交数据":"请输入Token查看数据"}</div><div style="margin-top:8px"><input type="password" placeholder="粘贴工蜂Token" value="${TK}" style="width:100%;padding:8px;border:1px solid #e7e5e4;border-radius:6px;font-size:12px" onchange="localStorage.setItem('woa_token',this.value);location.reload()"></div></div>`;return}
   const byTarget={multi:[],gen:[]};
   all.forEach(d=>{
     const hasMulti=(d.data||[]).some(pd=>(pd.items||[]).some(it=>it.type==='multi'));
@@ -534,12 +545,9 @@ function viewSubmit(idx){
 }
 async function delSubmit(fileName,idx){
   if(!confirm('确定删除？'))return;
-  const tk=localStorage.getItem('gh_token')||'';
-  const r=await fetch(`https://api.github.com/repos/${REPO}/contents/data/`+fileName,{headers:{Authorization:'token '+tk}});
-  if(!r.ok){toast('失败');return}
-  const d=await r.json();
-  const del=await fetch(`https://api.github.com/repos/${REPO}/contents/data/`+fileName,{method:'DELETE',headers:{Authorization:'token '+tk,'Content-Type':'application/json'},body:JSON.stringify({message:'del',sha:d.sha})});
-  if(del.ok){toast('已删除');loadSum()}else{toast('失败')}
+  const tk=localStorage.getItem('woa_token')||TK;
+  const r=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/files`,{method:'DELETE',headers:{'PRIVATE-TOKEN':tk,'Content-Type':'application/json'},body:JSON.stringify({file_path:'data/'+fileName,branch_name:'master',commit_message:'del'})});
+  if(r.ok){toast('已删除');loadSum()}else{toast('删除失败')}
 }
 function expMyExcel(){const my=getMyData();const wb=XLSX.utils.book_new();const dims=my.target==='multi'?DIMS_3:DIMS_12;const header=['平台','项目'];dims.forEach(d=>{header.push(d.name)});header.push('均分','备注');const rows=[['测评人: '+my.name],[],header];my.data.forEach(pd=>{(pd.items||[]).forEach(item=>{const row=[pd.platform,item.name||item.roundLabel||'轮'+item.round];dims.forEach(d=>{row.push((item.scores||{})[d.k]??'')});row.push(item.avg||'',item.note||'');rows.push(row)})});const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=header.map(()=>({wch:12}));XLSX.utils.book_append_sheet(wb,ws,'评分');XLSX.writeFile(wb,my.name+'_'+new Date().toISOString().slice(0,10)+'.xlsx');toast('已导出')}
 function expMyHtml(){const my=getMyData();const dims=my.target==='multi'?DIMS_3:DIMS_12;let html='<!DOCTYPE html><html><head><meta charset=UTF-8><title>'+my.name+'</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;padding:30px;font-size:13px}h1{font-size:18px;margin-bottom:8px}h2{font-size:15px;margin:12px 0 6px;color:#ea580c}table{border-collapse:collapse;width:100%;margin:6px 0;font-size:12px}th,td{border:1px solid #e7e5e4;padding:5px 7px;text-align:center}th{background:#f5f5f4}.hi{color:#16a34a;font-weight:700}.mid{color:#ea580c;font-weight:700}.lo{color:#dc2626;font-weight:700}.imgs{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}.imgs img{width:140px;height:100px;object-fit:cover;border-radius:5px}</style></head><body><h1>'+my.name+'</h1>';my.data.forEach(pd=>{html+='<h2>'+pd.platform+'</h2><table><tr><th>项目</th>';dims.forEach(d=>{html+='<th>'+d.name+'</th>'});html+='<th>均分</th><th>备注</th></tr>';(pd.items||[]).forEach(item=>{html+='<tr><td>'+(item.name||item.roundLabel||'轮'+item.round)+'</td>';dims.forEach(d=>{const v=(item.scores||{})[d.k];html+='<td class="'+(v>=2.5?'hi':v>=1.5?'mid':'lo')+'">'+(v!==undefined&&v!==null?v:'-')+'</td>'});html+='<td>'+(item.avg||'-')+'</td><td style="text-align:left">'+(item.note||'')+'</td></tr>';if((item.imgs||[]).length){html+='<tr><td colspan="'+(dims.length+3)+'"><div class=imgs>';item.imgs.forEach(src=>{html+='<img src="'+src+'">'});html+='</div></td></tr>'}});html+='</table>'});html+='</body></html>';const blob=new Blob([html],{type:'text/html'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=my.name+'_report.html';a.click();toast('已导出')}
