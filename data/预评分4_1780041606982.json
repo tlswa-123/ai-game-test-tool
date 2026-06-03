@@ -1,0 +1,135 @@
+{
+  "name": "预评分4",
+  "platforms": [
+    "我们+Claude4.7",
+    "我们+GLM5.1",
+    "WB+Claude4.7",
+    "WB+GLM5.1",
+    "Astrocade",
+    "Replit",
+    "aippy"
+  ],
+  "target": "gdd",
+  "time": "2026-05-29T08:00:06.982Z",
+  "data": [
+    {
+      "platform": "我们+Claude4.7",
+      "items": [
+        {
+          "name": "旅行餐车",
+          "num": 4,
+          "scores": {},
+          "time": 0,
+          "note": "",
+          "avg": ""
+        }
+      ]
+    },
+    {
+      "platform": "我们+GLM5.1",
+      "items": [
+        {
+          "name": "旅行餐车",
+          "num": 4,
+          "scores": {},
+          "time": 0,
+          "note": "",
+          "avg": ""
+        }
+      ]
+    },
+    {
+      "platform": "WB+Claude4.7",
+      "items": [
+        {
+          "name": "旅行餐车",
+          "num": 4,
+          "scores": {
+            "stability": 1,
+            "visual": 2,
+            "audio": 0,
+            "faithfulness": 2,
+            "gameplay": 1,
+            "subjective": 1
+          },
+          "time": 154,
+          "note": "不同数值相碰出现bug，方块消失",
+          "avg": "1.17"
+        }
+      ]
+    },
+    {
+      "platform": "WB+GLM5.1",
+      "items": [
+        {
+          "name": "旅行餐车",
+          "num": 4,
+          "scores": {
+            "stability": 1,
+            "visual": 2,
+            "audio": 0,
+            "faithfulness": 2,
+            "gameplay": 1,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "一共五关，五关通关后卡死",
+          "avg": "1.17"
+        }
+      ]
+    },
+    {
+      "platform": "Astrocade",
+      "items": [
+        {
+          "name": "旅行餐车",
+          "num": 4,
+          "scores": {
+            "stability": 2,
+            "visual": 1,
+            "audio": 0,
+            "faithfulness": 1,
+            "gameplay": 1,
+            "subjective": 0
+          },
+          "time": 204,
+          "note": "餐品图案未制作，仅用了颜色方块替代",
+          "avg": "0.83"
+        }
+      ]
+    },
+    {
+      "platform": "Replit",
+      "items": [
+        {
+          "name": "旅行餐车",
+          "num": 4,
+          "scores": {},
+          "time": 1433,
+          "note": "制作一半没钱了\n",
+          "avg": ""
+        }
+      ]
+    },
+    {
+      "platform": "aippy",
+      "items": [
+        {
+          "name": "旅行餐车",
+          "num": 4,
+          "scores": {
+            "stability": 0,
+            "visual": 0,
+            "audio": 0,
+            "faithfulness": 0,
+            "gameplay": 0,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "失败，未按照GDD生成",
+          "avg": "0.00"
+        }
+      ]
+    }
+  ]
+}
