@@ -1,0 +1,309 @@
+{
+  "name": "冲突处理",
+  "platforms": [
+    "我们+Claude4.7",
+    "我们+GLM5.1",
+    "WB+Claude4.7",
+    "WB+GLM5.1",
+    "Astrocade",
+    "Replit",
+    "aippy"
+  ],
+  "target": "multi",
+  "time": "2026-05-29T09:22:44.119Z",
+  "data": [
+    {
+      "platform": "我们+Claude4.7",
+      "items": [
+        {
+          "scene": "场景1：冲突处理",
+          "round": 1,
+          "scores": {
+            "execution": 0,
+            "content_quality": 0,
+            "memory": 2,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "游戏基础出现bug，后续带着bug一路延续",
+          "avg": "0.50"
+        },
+        {
+          "scene": "场景1：冲突处理",
+          "round": 2,
+          "scores": {
+            "execution": 0,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "",
+          "avg": "1.00"
+        },
+        {
+          "scene": "场景1：冲突处理",
+          "round": 3,
+          "scores": {
+            "execution": 2,
+            "content_quality": 2,
+            "memory": 1,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "",
+          "avg": "1.25"
+        }
+      ]
+    },
+    {
+      "platform": "我们+GLM5.1",
+      "items": [
+        {
+          "scene": "场景1：冲突处理",
+          "round": 1,
+          "scores": {},
+          "time": 0,
+          "note": "无基础生成，平台错误",
+          "avg": ""
+        },
+        {
+          "scene": "场景1：冲突处理",
+          "round": 2,
+          "scores": {},
+          "time": 0,
+          "note": "",
+          "avg": ""
+        },
+        {
+          "scene": "场景1：冲突处理",
+          "round": 3,
+          "scores": {},
+          "time": 0,
+          "note": "",
+          "avg": ""
+        }
+      ]
+    },
+    {
+      "platform": "WB+Claude4.7",
+      "items": [
+        {
+          "scene": "场景1：冲突处理",
+          "round": 1,
+          "scores": {
+            "execution": 2,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "无法进入下一关，游戏形成死局，只剩一种game over结局，未完成无尽模式",
+          "avg": "1.75"
+        },
+        {
+          "scene": "场景1：冲突处理",
+          "round": 2,
+          "scores": {
+            "execution": 2,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "还是无法实现胜利进入下一关",
+          "avg": "1.75"
+        },
+        {
+          "scene": "场景1：冲突处理",
+          "round": 3,
+          "scores": {
+            "execution": 0,
+            "content_quality": 0,
+            "memory": 2,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "只更改了标题",
+          "avg": "0.50"
+        }
+      ]
+    },
+    {
+      "platform": "WB+GLM5.1",
+      "items": [
+        {
+          "scene": "场景1：冲突处理",
+          "round": 1,
+          "scores": {
+            "execution": 1,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "消除完可消除水果后直接进入下一关，未达成无尽模式的效果",
+          "avg": "1.50"
+        },
+        {
+          "scene": "场景1：冲突处理",
+          "round": 2,
+          "scores": {
+            "execution": 1,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "下落后空格消失",
+          "avg": "1.50"
+        },
+        {
+          "scene": "场景1：冲突处理",
+          "round": 3,
+          "scores": {
+            "execution": 0,
+            "content_quality": 0,
+            "memory": 2,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "无法判断，确实出现新水果，但格子不足",
+          "avg": "0.50"
+        }
+      ]
+    },
+    {
+      "platform": "Astrocade",
+      "items": [
+        {
+          "scene": "场景1：冲突处理",
+          "round": 1,
+          "scores": {
+            "execution": 1,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "",
+          "avg": "1.25"
+        },
+        {
+          "scene": "场景1：冲突处理",
+          "round": 2,
+          "scores": {
+            "execution": 0,
+            "content_quality": 0,
+            "memory": 2,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "",
+          "avg": "0.50"
+        },
+        {
+          "scene": "场景1：冲突处理",
+          "round": 3,
+          "scores": {
+            "execution": 0,
+            "content_quality": 1,
+            "memory": 2,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "",
+          "avg": "0.75"
+        }
+      ]
+    },
+    {
+      "platform": "Replit",
+      "items": [
+        {
+          "scene": "场景1：冲突处理",
+          "round": 1,
+          "scores": {
+            "execution": 1,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "",
+          "avg": "1.50"
+        },
+        {
+          "scene": "场景1：冲突处理",
+          "round": 2,
+          "scores": {
+            "execution": 1,
+            "content_quality": 1,
+            "memory": 2,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "无法判断是否因为新条件导致网页崩溃，刷新后成功生成，中间出现斜对角空格",
+          "avg": "1.00"
+        },
+        {
+          "scene": "场景1：冲突处理",
+          "round": 3,
+          "scores": {
+            "execution": 1,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "",
+          "avg": "1.25"
+        }
+      ]
+    },
+    {
+      "platform": "aippy",
+      "items": [
+        {
+          "scene": "场景1：冲突处理",
+          "round": 1,
+          "scores": {
+            "execution": 1,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "未达成无尽模式",
+          "avg": "1.50"
+        },
+        {
+          "scene": "场景1：冲突处理",
+          "round": 2,
+          "scores": {
+            "execution": 0,
+            "content_quality": 0,
+            "memory": 2,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "变成6×5",
+          "avg": "0.50"
+        },
+        {
+          "scene": "场景1：冲突处理",
+          "round": 3,
+          "scores": {
+            "execution": 0,
+            "content_quality": 0,
+            "memory": 2,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "格子过小，出现水果数量有限，无法判断是否12个",
+          "avg": "0.50"
+        }
+      ]
+    }
+  ]
+}
