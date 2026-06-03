@@ -1,0 +1,329 @@
+{
+  "name": "改美术",
+  "platforms": [
+    "我们+Claude4.7",
+    "我们+GLM5.1",
+    "WB+Claude4.7",
+    "WB+GLM5.1",
+    "Astrocade",
+    "Replit",
+    "TapTap制造",
+    "aippy"
+  ],
+  "target": "multi",
+  "time": "2026-05-29T09:58:25.984Z",
+  "data": [
+    {
+      "platform": "我们+Claude4.7",
+      "items": [
+        {
+          "scene": "场景3：改美术",
+          "round": 1,
+          "scores": {
+            "execution": 2,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "",
+          "avg": "1.75"
+        },
+        {
+          "scene": "场景3：改美术",
+          "round": 2,
+          "scores": {
+            "execution": 2,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "",
+          "avg": "1.75"
+        },
+        {
+          "scene": "场景3：改美术",
+          "round": 3,
+          "scores": {},
+          "time": 0,
+          "note": "",
+          "avg": ""
+        }
+      ]
+    },
+    {
+      "platform": "我们+GLM5.1",
+      "items": [
+        {
+          "scene": "场景3：改美术",
+          "round": 1,
+          "scores": {},
+          "time": 0,
+          "note": "",
+          "avg": ""
+        },
+        {
+          "scene": "场景3：改美术",
+          "round": 2,
+          "scores": {},
+          "time": 0,
+          "note": "",
+          "avg": ""
+        },
+        {
+          "scene": "场景3：改美术",
+          "round": 3,
+          "scores": {},
+          "time": 0,
+          "note": "",
+          "avg": ""
+        }
+      ]
+    },
+    {
+      "platform": "WB+Claude4.7",
+      "items": [
+        {
+          "scene": "场景3：改美术",
+          "round": 1,
+          "scores": {
+            "execution": 2,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "",
+          "avg": "1.75"
+        },
+        {
+          "scene": "场景3：改美术",
+          "round": 2,
+          "scores": {
+            "execution": 2,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "",
+          "avg": "1.75"
+        },
+        {
+          "scene": "场景3：改美术",
+          "round": 3,
+          "scores": {
+            "execution": 2,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "",
+          "avg": "1.75"
+        }
+      ]
+    },
+    {
+      "platform": "WB+GLM5.1",
+      "items": [
+        {
+          "scene": "场景3：改美术",
+          "round": 1,
+          "scores": {
+            "execution": 2,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "",
+          "avg": "1.75"
+        },
+        {
+          "scene": "场景3：改美术",
+          "round": 2,
+          "scores": {
+            "execution": 2,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "",
+          "avg": "1.75"
+        },
+        {
+          "scene": "场景3：改美术",
+          "round": 3,
+          "scores": {
+            "execution": 2,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "",
+          "avg": "1.75"
+        }
+      ]
+    },
+    {
+      "platform": "Astrocade",
+      "items": [
+        {
+          "scene": "场景3：改美术",
+          "round": 1,
+          "scores": {
+            "execution": 0,
+            "content_quality": 0,
+            "memory": 0,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "不理解prompt ",
+          "avg": "0.00"
+        },
+        {
+          "scene": "场景3：改美术",
+          "round": 2,
+          "scores": {},
+          "time": 0,
+          "note": "",
+          "avg": ""
+        },
+        {
+          "scene": "场景3：改美术",
+          "round": 3,
+          "scores": {},
+          "time": 0,
+          "note": "",
+          "avg": ""
+        }
+      ]
+    },
+    {
+      "platform": "Replit",
+      "items": [
+        {
+          "scene": "场景3：改美术",
+          "round": 1,
+          "scores": {
+            "execution": 3,
+            "content_quality": 3,
+            "memory": 2,
+            "subjective": 2
+          },
+          "time": 0,
+          "note": "会根据美术素材修改游戏名称",
+          "avg": "2.50"
+        },
+        {
+          "scene": "场景3：改美术",
+          "round": 2,
+          "scores": {
+            "execution": 2,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 2
+          },
+          "time": 0,
+          "note": "",
+          "avg": "2.00"
+        },
+        {
+          "scene": "场景3：改美术",
+          "round": 3,
+          "scores": {
+            "execution": 2,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 2
+          },
+          "time": 0,
+          "note": "",
+          "avg": "2.00"
+        }
+      ]
+    },
+    {
+      "platform": "TapTap制造",
+      "items": [
+        {
+          "scene": "场景3：改美术",
+          "round": 1,
+          "scores": {
+            "execution": 0,
+            "content_quality": 0,
+            "memory": 0,
+            "subjective": 0
+          },
+          "time": 0,
+          "note": "未开放",
+          "avg": "0.00"
+        },
+        {
+          "scene": "场景3：改美术",
+          "round": 2,
+          "scores": {},
+          "time": 0,
+          "note": "",
+          "avg": ""
+        },
+        {
+          "scene": "场景3：改美术",
+          "round": 3,
+          "scores": {},
+          "time": 0,
+          "note": "",
+          "avg": ""
+        }
+      ]
+    },
+    {
+      "platform": "aippy",
+      "items": [
+        {
+          "scene": "场景3：改美术",
+          "round": 1,
+          "scores": {
+            "execution": 2,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 1
+          },
+          "time": 0,
+          "note": "首轮生成有bug，游戏无法正常玩，水果不能正常消除",
+          "avg": "1.75"
+        },
+        {
+          "scene": "场景3：改美术",
+          "round": 2,
+          "scores": {
+            "execution": 2,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 2
+          },
+          "time": 0,
+          "note": "",
+          "avg": "2.00"
+        },
+        {
+          "scene": "场景3：改美术",
+          "round": 3,
+          "scores": {
+            "execution": 2,
+            "content_quality": 2,
+            "memory": 2,
+            "subjective": 2
+          },
+          "time": 0,
+          "note": "",
+          "avg": "2.00"
+        }
+      ]
+    }
+  ]
+}
