@@ -621,7 +621,91 @@ async function loadSum(){
     if(hasMulti)byTarget.multi.push(d);
     if(hasGen)byTarget.gen.push(d);
   });
+  // ===== 校准基准计算 =====
+  // 基于"吃碰杠胡了"gdd case，计算每位测评人的校准基准和总体校准基准
+  const CALIB_CASE='吃碰杠胡';
+  const calibData=[]; // {name, validCount, dimAvgs:{dim:avg}}
+  const allMjDimScores={}; // dim -> [scores] (排除全3分提交)
+  validAll.forEach(d=>{
+    let mjValidItems=[];
+    (d.data||[]).forEach(pd=>{
+      (pd.items||[]).forEach(it=>{
+        if(it.type==='gdd' && (it.name||'').includes(CALIB_CASE)){
+          const scores=it.scores||{};
+          if(Object.values(scores).some(v=>v!==0)) mjValidItems.push(scores);
+        }
+      });
+    });
+    if(!mjValidItems.length){calibData.push({name:d.name,validCount:0,dimAvgs:{}});return}
+    const dimSums={};
+    DIMS_12.forEach(dim=>{dimSums[dim.k]={s:0,c:0}});
+    mjValidItems.forEach(scores=>{
+      DIMS_12.forEach(dim=>{
+        const v=scores[dim.k];
+        if(v!==undefined&&v!==null&&v!==0){dimSums[dim.k].s+=v;dimSums[dim.k].c++;
+          allMjDimScores[dim.k]=allMjDimScores[dim.k]||[];allMjDimScores[dim.k].push(v);
+        }
+      });
+    });
+    const dimAvgs={};
+    DIMS_12.forEach(dim=>{dimAvgs[dim.k]=dimSums[dim.k].c?+(dimSums[dim.k].s/dimSums[dim.k].c).toFixed(2):0});
+    calibData.push({name:d.name,validCount:mjValidItems.length,dimAvgs});
+  });
+  // 总体校准基准（所有有效测评人在麻将case上的均分）
+  const overallBaseline={};
+  DIMS_12.forEach(dim=>{const arr=allMjDimScores[dim.k]||[];overallBaseline[dim.k]=arr.length?+(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(2):0});
+  const overallBaselineAvg=+(DIMS_12.reduce((s,dim)=>s+overallBaseline[dim.k],0)/DIMS_12.length).toFixed(2);
+  // 每位测评人的校准offset: offset[dim] = overallBaseline[dim] - personalBaseline[dim]
+  // validCount<3的使用总体基准（offset=0）
+  const calibMap={}; // name -> {offset:{dim:offset}, validCount, useOverall, note}
+  calibData.forEach(c=>{
+    const useOverall=c.validCount<3;
+    const offset={};
+    DIMS_12.forEach(dim=>{
+      if(useOverall){offset[dim.k]=0}
+      else{offset[dim.k]=+((overallBaseline[dim.k]||0)-(c.dimAvgs[dim.k]||0)).toFixed(2)}
+    });
+    const offsetAvg=+(DIMS_12.reduce((s,dim)=>s+offset[dim.k],0)/DIMS_12.length).toFixed(2);
+    let note=useOverall?'使用总体基准校正':'';
+    if(!useOverall&&offsetAvg<-0.3)note='偏松';
+    if(!useOverall&&offsetAvg>0.3)note='偏严';
+    calibMap[c.name]={offset,offsetAvg,validCount:c.validCount,useOverall,note,dimAvgs:c.dimAvgs};
+  });
+  window.calibration={calibMap,overallBaseline,overallBaselineAvg,calibData};
+  // ===== 校准基准结束 =====
   let h='<div class="s"><div class="sh"><div class="sn" style="background:var(--green)">'+all.length+'</div><div class="st">'+all.length+' 份提交</div>'+(failedFiles.length?'<span style="margin-left:8px;font-size:11px;color:var(--red)">⚠ '+failedFiles.length+'个文件加载失败</span>':'')+(all.length-validAll.length?'<span style="margin-left:8px;font-size:11px;color:var(--dim)">分析排除'+(all.length-validAll.length)+'人(全3分)</span>':'')+'<span style="margin-left:auto;font-size:11px;color:var(--dim)">每60秒自动刷新</span><button class="refresh-btn" onclick="loadSum()" style="margin-left:8px">刷新</button></div></div>';
+  // 校准基准板块
+  h+='<div class="s"><div class="sh"><div class="sn" style="background:#f59e0b">校</div><div class="st">校正基准</div></div>';
+  h+='<div style="overflow-x:auto"><table class="dt" style="font-size:12px"><tr><th>测评人</th>';
+  DIMS_12.forEach(dim=>{h+='<th>'+dim.name+'</th>'});
+  h+='<th>均分</th><th>提交数</th><th>校正幅度</th><th>备注</th></tr>';
+  calibData.sort((a,b)=>{
+    const ca=calibMap[a.name],cb=calibMap[b.name];
+    return(cb.offsetAvg||0)-(ca.offsetAvg||0);
+  }).forEach(c=>{
+    const cm=calibMap[c.name];
+    const avg=DIMS_12.reduce((s,dim)=>s+(c.dimAvgs[dim.k]||0),0)/DIMS_12.length;
+    h+='<tr><td><b>'+c.name+'</b></td>';
+    DIMS_12.forEach(dim=>{
+      const v=c.dimAvgs[dim.k]||0;
+      const valid=v>0;
+      const color=v>=2.5?'var(--green)':v>=1.5?'var(--accent)':'var(--red)';
+      h+='<td style="font-weight:700;color:'+(valid?color:'var(--light)')+'">'+(valid?v.toFixed(2):'-')+'</td>';
+    });
+    h+='<td style="font-weight:700">'+(avg>0?avg.toFixed(2):'-')+'</td>';
+    h+='<td>'+c.validCount+'</td>';
+    const oa=cm.offsetAvg||0;
+    const oaColor=oa>0.3?'var(--red)':oa<-0.3?'var(--green)':'var(--text)';
+    h+='<td style="font-weight:700;color:'+oaColor+'">'+(oa>=0?'+':'')+oa.toFixed(2)+'</td>';
+    h+='<td style="font-size:11px;color:var(--dim)">'+cm.note+'</td></tr>';
+  });
+  // 总体校准基准行
+  h+='<tr style="background:var(--bg2);font-weight:700"><td>总体校准基准</td>';
+  DIMS_12.forEach(dim=>{h+='<td>'+(overallBaseline[dim.k]||0).toFixed(2)+'</td>'});
+  h+='<td>'+overallBaselineAvg+'</td><td>'+DIMS_12.reduce((s,dim)=>s+(allMjDimScores[dim.k]||[]).length,0)+'</td><td>-</td><td style="font-size:11px;color:var(--dim)">基准线</td></tr>';
+  h+='</table></div>';
+  h+='<div style="margin-top:8px;font-size:11px;color:var(--dim);padding:0 4px">标准化后得分 = 原始得分 - 该测评人的校准基准 + 总体校准基准<br>校准基准 = 该测评人在"吃碰杠胡了"项目上的平均得分 | 总体校准基准 = 所有测评人在"吃碰杠胡了"项目上的平均得分<br>《吃碰杠胡了》打分少于 3 次的测评人，因统计可靠性不足，使用总体校准基准。标准化后的分数已做边界处理（0~3钳制）</div>';
+  h+='</div>';
   if(byTarget.gen.length) h+=renderTargetAnalysis('新游戏生成',validAll,DIMS_12);
   if(byTarget.multi.length) h+=renderTargetAnalysis('多轮修改',validAll,DIMS_3);
   // 主观平台排名 — 独立板块
@@ -657,11 +741,14 @@ function calcSubjectiveRank(rankData){
 }
 function renderTargetAnalysis(title,data,dims){
   const isMulti=title.includes('多轮');
+  const cal=window.calibration||{};
+  const calibMap=cal.calibMap||{};
+  const overallBaseline=cal.overallBaseline||{};
   const platStats={};
-  // 构建测评人维度明细
+  // 构建测评人维度明细（含校准）
   const evaluatorDetail=[];
   data.forEach(d=>{
-    const ev={name:d.name,platforms:{}};
+    const ev={name:d.name,platforms:{},calibOffset:calibMap[d.name]||null};
     (d.data||[]).forEach(pd=>{
       // 按目标类型过滤items
       const items=(pd.items||[]).filter(it=>isMulti?it.type==='multi':it.type!=='multi');
@@ -674,7 +761,22 @@ function renderTargetAnalysis(title,data,dims){
         const allMax=dims.every(dim=>{const v=(item.scores||{})[dim.k];return v===3});
         if(allMax)return;
         let it=0,ic=0;
-        dims.forEach(dim=>{const v=(item.scores||{})[dim.k];if(v!==undefined&&v!==null&&v!==0){ps.dimSums[dim.k]+=v;ps.dimCounts[dim.k]++;pDimSums[dim.k]=(pDimSums[dim.k]||0)+v;pDimCounts[dim.k]=(pDimCounts[dim.k]||0)+1;it+=v;ic++}});
+        dims.forEach(dim=>{
+          let v=(item.scores||{})[dim.k];
+          if(v!==undefined&&v!==null&&v!==0){
+            // 应用校准：对于DIMS_12的维度直接用offset，对于DIMS_3的维度用offsetAvg近似
+            const cm=calibMap[d.name];
+            let calibV=v;
+            if(cm){
+              if(cm.offset[dim.k]!==undefined){calibV=Math.max(0,Math.min(3,v+cm.offset[dim.k]))}
+              else{calibV=Math.max(0,Math.min(3,v+cm.offsetAvg))}
+            }
+            calibV=+calibV.toFixed(2);
+            ps.dimSums[dim.k]+=calibV;ps.dimCounts[dim.k]++;
+            pDimSums[dim.k]=(pDimSums[dim.k]||0)+calibV;pDimCounts[dim.k]=(pDimCounts[dim.k]||0)+1;
+            it+=calibV;ic++;
+          }
+        });
         if(ic){ps.totalScores.push(it/ic);hasValid=true}
         ps.items.push({...item,platform:pd.platform});
       });
@@ -713,11 +815,12 @@ function showAnalysis(aid,type){
   const rankData=d.rankData||[];
   const avg=arr=>arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length):0;
   const fmtA=v=>typeof v==='number'?v.toFixed(2):'-';
-  // 通用：测评人明细表
+  // 通用：测评人明细表（含校正幅度列）
   function evaluatorTable(valueKey,formatFn){
+    const cal=window.calibration||{};const cm=cal.calibMap||{};
     let t='<div style="margin-top:16px;font-size:14px;font-weight:700;margin-bottom:8px">测评人明细</div>';
     t+='<div style="overflow-x:auto"><table class="dt"><tr><th>测评人</th>';
-    platforms.forEach(p=>{t+='<th>'+p+'</th>'});t+='</tr>';
+    platforms.forEach(p=>{t+='<th>'+p+'</th>'});t+='<th>校正</th></tr>';
     evaluatorDetail.forEach(ev=>{
       t+='<tr><td><b>'+ev.name+'</b></td>';
       platforms.forEach(p=>{
@@ -731,6 +834,10 @@ function showAnalysis(aid,type){
           t+='<td style="color:var(--light)">-</td>';
         }
       });
+      const c=cm[ev.name];
+      const oa=c?c.offsetAvg:0;
+      const oaColor=oa>0.3?'var(--red)':oa<-0.3?'var(--green)':'var(--dim)';
+      t+='<td style="font-size:11px;color:'+oaColor+'">'+(oa>=0?'+':'')+oa.toFixed(2)+'</td>';
       t+='</tr>';
     });
     t+='</table></div>';
@@ -753,12 +860,13 @@ function showAnalysis(aid,type){
     dims.forEach(dim=>{h+='<th>'+dim.name+'</th>'});h+='</tr>';
     platforms.forEach(p=>{const ps=platStats[p];h+='<tr><td><b>'+p+'</b></td>';dims.forEach(dim=>{const val=ps.dimCounts[dim.k]?ps.dimSums[dim.k]/ps.dimCounts[dim.k]:null;const level=val!==null?(val>=2.5?3:val>=1.5?2:val>=0.5?1:0):-1;h+='<td class="'+(level>=0?'hm-'+level:'')+'" style="'+(level<0?'color:var(--light)':'')+'">'+(val!==null?val.toFixed(1):'-')+'</td>'});h+='</tr>'});
     h+='</table></div>';
-    // 测评人维度明细
+    // 测评人维度明细（含校正列）
+    const cal=window.calibration||{};const cm=cal.calibMap||{};
     h+='<div style="margin-top:16px;font-size:14px;font-weight:700;margin-bottom:8px">测评人维度明细</div>';
     platforms.forEach(p=>{
       h+='<div style="font-size:13px;font-weight:600;margin:8px 0 4px;color:var(--accent)">'+p+'</div>';
       h+='<div style="overflow-x:auto"><table class="dt heatmap"><tr><th>测评人</th>';
-      dims.forEach(dim=>{h+='<th>'+dim.name+'</th>'});h+='</tr>';
+      dims.forEach(dim=>{h+='<th>'+dim.name+'</th>'});h+='<th>校正</th></tr>';
       evaluatorDetail.forEach(ev=>{
         h+='<tr><td><b>'+ev.name+'</b></td>';
         dims.forEach(dim=>{
@@ -770,6 +878,9 @@ function showAnalysis(aid,type){
             }else{h+='<td style="color:var(--light)">-</td>'}
           }else{h+='<td style="color:var(--light)">-</td>'}
         });
+        const c=cm[ev.name];const oa=c?c.offsetAvg:0;
+        const oaColor=oa>0.3?'var(--red)':oa<-0.3?'var(--green)':'var(--dim)';
+        h+='<td style="font-size:11px;color:'+oaColor+'">'+(oa>=0?'+':'')+oa.toFixed(2)+'</td>';
         h+='</tr>';
       });
       h+='</table></div>';
@@ -779,11 +890,12 @@ function showAnalysis(aid,type){
     dims.forEach(dim=>{let best={p:'',v:-1},worst={p:'',v:4};platforms.forEach(p=>{const ps=platStats[p];if(!ps.dimCounts[dim.k])return;const val=ps.dimSums[dim.k]/ps.dimCounts[dim.k];if(val>best.v)best={p,v:val};if(val<worst.v)worst={p,v:val}});h+='<tr><td><b>'+dim.name+'</b></td><td style="color:var(--green)">'+best.p+'</td><td style="color:var(--green);font-weight:700">'+fmtA(best.v)+'</td><td style="color:var(--red)">'+worst.p+'</td><td style="color:var(--red);font-weight:700">'+fmtA(worst.v)+'</td></tr>'});
     h+='</table>';
     // 每个维度的测评人明细
+    const cal3=window.calibration||{};const cm3=cal3.calibMap||{};
     h+='<div style="margin-top:16px;font-size:14px;font-weight:700;margin-bottom:8px">各维度测评人打分明细</div>';
     dims.forEach(dim=>{
       h+='<div style="font-size:13px;font-weight:600;margin:8px 0 4px;color:var(--accent)">'+dim.name+'</div>';
       h+='<div style="overflow-x:auto"><table class="dt"><tr><th>测评人</th>';
-      platforms.forEach(p=>{h+='<th>'+p+'</th>'});h+='</tr>';
+      platforms.forEach(p=>{h+='<th>'+p+'</th>'});h+='<th>校正</th></tr>';
       evaluatorDetail.forEach(ev=>{
         h+='<tr><td><b>'+ev.name+'</b></td>';
         platforms.forEach(p=>{
@@ -793,6 +905,9 @@ function showAnalysis(aid,type){
             h+='<td style="font-weight:700;color:'+color+'">'+v.toFixed(2)+'</td>';
           }else{h+='<td style="color:var(--light)">-</td>'}
         });
+        const c=cm3[ev.name];const oa=c?c.offsetAvg:0;
+        const oaColor=oa>0.3?'var(--red)':oa<-0.3?'var(--green)':'var(--dim)';
+        h+='<td style="font-size:11px;color:'+oaColor+'">'+(oa>=0?'+':'')+oa.toFixed(2)+'</td>';
         h+='</tr>';
       });
       h+='</table></div>';
@@ -807,10 +922,17 @@ function showAnalysis(aid,type){
       sr.forEach((x,i)=>{h+='<tr><td>'+(i+1)+'</td><td><b>'+x.platform+'</b></td><td style="font-weight:700;color:'+(i===0?'var(--green)':'var(--accent)')+'">'+x.avg+'</td><td>'+x.count+'</td></tr>'});
       h+='</table>';
       h+='<div style="margin-top:16px;font-size:14px;font-weight:700;margin-bottom:8px">各测评人排名明细</div>';
+      const cal4=window.calibration||{};const cm4=cal4.calibMap||{};
       h+='<div style="overflow-x:auto"><table class="dt"><tr><th>测评人</th>';
-      sr.forEach(x=>{h+='<th>'+x.platform+'</th>'});
-      h+='</tr>';
-      rd.forEach(r=>{h+='<tr><td><b>'+r.name+'</b></td>';sr.forEach(x=>{const v=r.ranking.find(rx=>rx.platform===x.platform);h+='<td style="font-weight:700;color:'+(v&&v.rank===1?'var(--green)':v&&v.rank===sr.length?'var(--red)':'var(--text)')+'">'+(v?v.rank:'-')+'</td>'});h+='</tr>'});
+      sr.forEach(x=>{h+='<th>'+x.platform+'</th>'});h+='<th>校正</th></tr>';
+      rd.forEach(r=>{
+        h+='<tr><td><b>'+r.name+'</b></td>';
+        sr.forEach(x=>{const v=r.ranking.find(rx=>rx.platform===x.platform);h+='<td style="font-weight:700;color:'+(v&&v.rank===1?'var(--green)':v&&v.rank===sr.length?'var(--red)':'var(--text)')+'">'+(v?v.rank:'-')+'</td>'});
+        const c=cm4[r.name];const oa=c?c.offsetAvg:0;
+        const oaColor=oa>0.3?'var(--red)':oa<-0.3?'var(--green)':'var(--dim)';
+        h+='<td style="font-size:11px;color:'+oaColor+'">'+(oa>=0?'+':'')+oa.toFixed(2)+'</td>';
+        h+='</tr>';
+      });
       h+='</table></div>';
     }
   }else if(type==='trend'){
