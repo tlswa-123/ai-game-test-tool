@@ -624,6 +624,16 @@ async function loadSum(){
   let h='<div class="s"><div class="sh"><div class="sn" style="background:var(--green)">'+all.length+'</div><div class="st">'+all.length+' 份提交</div>'+(failedFiles.length?'<span style="margin-left:8px;font-size:11px;color:var(--red)">⚠ '+failedFiles.length+'个文件加载失败</span>':'')+(all.length-validAll.length?'<span style="margin-left:8px;font-size:11px;color:var(--dim)">分析排除'+(all.length-validAll.length)+'人(全3分)</span>':'')+'<span style="margin-left:auto;font-size:11px;color:var(--dim)">每60秒自动刷新</span><button class="refresh-btn" onclick="loadSum()" style="margin-left:8px">刷新</button></div></div>';
   if(byTarget.gen.length) h+=renderTargetAnalysis('新游戏生成',validAll,DIMS_12);
   if(byTarget.multi.length) h+=renderTargetAnalysis('多轮修改',validAll,DIMS_3);
+  // 主观平台排名 — 独立板块
+  const rankData=[];
+  validAll.forEach(d=>{if(d.ranking&&d.ranking.length)rankData.push({name:d.name,ranking:d.ranking})});
+  if(rankData.length){
+    const sr=calcSubjectiveRank(rankData);
+    window.a_subjective={rankData,sorted:sr};
+    h+='<div class="s"><div class="sh"><div class="sn" style="background:#8b5cf6">主</div><div class="st">主观平台排名</div></div><div class="analysis-grid">';
+    h+='<div class="acard" onclick="showAnalysis(\'a_subjective\',\'subjective\')"><div class="acard-title">主观平台排名</div><div class="acard-preview">'+sr.slice(0,3).map((x,i)=>(i+1)+'. '+x.platform).join('<br>')+'<br><span style="font-size:10px;color:var(--dim)">'+rankData.length+'人参与</span></div></div>';
+    h+='</div></div>';
+  }
   h+='<div id="submitList"></div>';
   h+='<div class="s" style="display:flex;gap:10px"><button class="tab active" style="border:none" onclick="expHtml()">导出HTML报告</button></div>';
   document.getElementById('app').innerHTML=h;window._d=all;
@@ -643,7 +653,7 @@ async function loadSum(){
 function calcSubjectiveRank(rankData){
   const platScores={};
   rankData.forEach(d=>{const n=d.ranking.length;d.ranking.forEach(r=>{if(!platScores[r.platform])platScores[r.platform]={score:0,count:0};platScores[r.platform].score+=n-r.rank+1;platScores[r.platform].count++})});
-  return Object.keys(platScores).map(p=>({platform:p,score:platScores[p].score,count:platScores[p].count,avg:platScores[p].count?(platScores[p].score/platScores[p].count).toFixed(2):'-'})).sort((a,b)=>b.score-a.score);
+  return Object.keys(platScores).map(p=>({platform:p,score:platScores[p].score,count:platScores[p].count,avg:platScores[p].count?(platScores[p].score/platScores[p].count).toFixed(2):'-'})).sort((a,b)=>parseFloat(b.avg)-parseFloat(a.avg));
 }
 function renderTargetAnalysis(title,data,dims){
   const isMulti=title.includes('多轮');
@@ -675,24 +685,26 @@ function renderTargetAnalysis(title,data,dims){
   const platforms=Object.keys(platStats);if(!platforms.length)return'';
   const avg=arr=>arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length):0;
   const fmtA=v=>typeof v==='number'?v.toFixed(2):'-';
-  const aid='a_'+title.replace(/[^a-z0-9]/gi,'');
-  // 收集主观排名数据 — 全部有效提交
-  const rankData=[];
-  data.forEach(d=>{if(d.ranking&&d.ranking.length)rankData.push({name:d.name,ranking:d.ranking})});
-  window[aid]={platStats,platforms,dims,title,data,rankData,evaluatorDetail};
+  const aid=isMulti?'a_multi':'a_gen';
+  window[aid]={platStats,platforms,dims,title,data,evaluatorDetail};
   let h='<div class="s"><div class="sh"><div class="sn" style="background:var(--blue)">'+title[0]+'</div><div class="st">'+title+'</div></div><div class="analysis-grid">';
   const sorted=platforms.map(p=>({p,s:avg(platStats[p].totalScores)})).sort((a,b)=>b.s-a.s);
   h+='<div class="acard" onclick="showAnalysis(\''+aid+'\',\'rank\')"><div class="acard-title">平台综合排名</div><div class="acard-preview">'+sorted.slice(0,3).map((x,i)=>(i+1)+'. '+x.p+' '+fmtA(x.s)).join('<br>')+'</div></div>';
   h+='<div class="acard" onclick="showAnalysis(\''+aid+'\',\'heatmap\')"><div class="acard-title">维度强弱热力图</div><div class="acard-preview">各平台各维度得分着色对比</div></div>';
   h+='<div class="acard" onclick="showAnalysis(\''+aid+'\',\'bestworst\')"><div class="acard-title">单项最优/最差</div><div class="acard-preview">各维度冠军和短板一览</div></div>';
-  if(rankData.length){const preview=calcSubjectiveRank(rankData).slice(0,3).map((x,i)=>(i+1)+'. '+x.platform).join('<br>');h+='<div class="acard" onclick="showAnalysis(\''+aid+'\',\'subjective\')"><div class="acard-title">主观平台排名</div><div class="acard-preview">'+preview+'<br><span style="font-size:10px;color:var(--dim)">'+rankData.length+'人参与</span></div></div>'}
   if(title.includes('多轮')){h+='<div class="acard" onclick="showAnalysis(\''+aid+'\',\'trend\')"><div class="acard-title">多轮趋势分析</div><div class="acard-preview">3轮修改分数变化趋势</div></div>'}
   h+='</div></div>';
   return h;
 }
 function showAnalysis(aid,type){
   const d=window[aid];if(!d)return;
-  const{platStats,platforms,dims,title,evaluatorDetail,rankData}=d;
+  const isSubjective=(aid==='a_subjective');
+  const platStats=d.platStats||{};
+  const platforms=d.platforms||[];
+  const dims=d.dims||[];
+  const title=d.title||'主观平台排名';
+  const evaluatorDetail=d.evaluatorDetail||[];
+  const rankData=d.rankData||[];
   const avg=arr=>arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length):0;
   const fmtA=v=>typeof v==='number'?v.toFixed(2):'-';
   // 通用：测评人明细表
@@ -781,20 +793,18 @@ function showAnalysis(aid,type){
     });
   }else if(type==='subjective'){
     h+='主观平台排名</h2>';
-    const rd=rankData||[];
+    const rd=rankData;
     if(!rd.length){h+='<div class="sd">暂无主观排名数据</div>'}
     else{
-      const platScores={};
-      rd.forEach(r=>{const n=r.ranking.length;r.ranking.forEach(x=>{if(!platScores[x.platform])platScores[x.platform]={score:0,count:0,votes:[]};platScores[x.platform].score+=n-x.rank+1;platScores[x.platform].count++;platScores[x.platform].votes.push({name:r.name,rank:x.rank})})});
-      const sorted=Object.keys(platScores).map(p=>({platform:p,score:platScores[p].score,count:platScores[p].count,avg:platScores[p].count?(platScores[p].score/platScores[p].count).toFixed(2):'-',votes:platScores[p].votes})).sort((a,b)=>b.score-a.score);
-      h+='<table class="dt"><tr><th>排名</th><th>平台</th><th>Borda总分</th><th>人均得分</th><th>投票数</th></tr>';
-      sorted.forEach((x,i)=>{h+='<tr><td>'+(i+1)+'</td><td><b>'+x.platform+'</b></td><td style="font-weight:700;color:'+(i===0?'var(--green)':'var(--accent)')+'">'+x.score+'</td><td>'+x.avg+'</td><td>'+x.count+'</td></tr>'});
+      const sr=d.sorted||calcSubjectiveRank(rd);
+      h+='<table class="dt"><tr><th>排名</th><th>平台</th><th>人均得分</th><th>投票数</th></tr>';
+      sr.forEach((x,i)=>{h+='<tr><td>'+(i+1)+'</td><td><b>'+x.platform+'</b></td><td style="font-weight:700;color:'+(i===0?'var(--green)':'var(--accent)')+'">'+x.avg+'</td><td>'+x.count+'</td></tr>'});
       h+='</table>';
       h+='<div style="margin-top:16px;font-size:14px;font-weight:700;margin-bottom:8px">各测评人排名明细</div>';
       h+='<div style="overflow-x:auto"><table class="dt"><tr><th>测评人</th>';
-      sorted.forEach(x=>{h+='<th>'+x.platform+'</th>'});
+      sr.forEach(x=>{h+='<th>'+x.platform+'</th>'});
       h+='</tr>';
-      rd.forEach(r=>{h+='<tr><td><b>'+r.name+'</b></td>';sorted.forEach(x=>{const v=r.ranking.find(rx=>rx.platform===x.platform);h+='<td style="font-weight:700;color:'+(v&&v.rank===1?'var(--green)':v&&v.rank===sorted.length?'var(--red)':'var(--text)')+'">'+(v?v.rank:'-')+'</td>'});h+='</tr>'});
+      rd.forEach(r=>{h+='<tr><td><b>'+r.name+'</b></td>';sr.forEach(x=>{const v=r.ranking.find(rx=>rx.platform===x.platform);h+='<td style="font-weight:700;color:'+(v&&v.rank===1?'var(--green)':v&&v.rank===sr.length?'var(--red)':'var(--text)')+'">'+(v?v.rank:'-')+'</td>'});h+='</tr>'});
       h+='</table></div>';
     }
   }else if(type==='trend'){
