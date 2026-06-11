@@ -669,16 +669,22 @@ function renderTargetAnalysis(title,data,dims){
       if(!platStats[pd.platform])platStats[pd.platform]={dimSums:{},dimCounts:{},totalScores:[],items:[]};
       const ps=platStats[pd.platform];
       dims.forEach(dim=>{if(!ps.dimSums[dim.k]){ps.dimSums[dim.k]=0;ps.dimCounts[dim.k]=0}});
-      let pScores={},hasValid=false;
+      let pDimSums={},pDimCounts={},hasValid=false;
       items.forEach(item=>{
         const allMax=dims.every(dim=>{const v=(item.scores||{})[dim.k];return v===3});
         if(allMax)return;
         let it=0,ic=0;
-        dims.forEach(dim=>{const v=(item.scores||{})[dim.k];if(v!==undefined&&v!==null&&v!==0){ps.dimSums[dim.k]+=v;ps.dimCounts[dim.k]++;pScores[dim.k]=(pScores[dim.k]||0)+v;it+=v;ic++}});
+        dims.forEach(dim=>{const v=(item.scores||{})[dim.k];if(v!==undefined&&v!==null&&v!==0){ps.dimSums[dim.k]+=v;ps.dimCounts[dim.k]++;pDimSums[dim.k]=(pDimSums[dim.k]||0)+v;pDimCounts[dim.k]=(pDimCounts[dim.k]||0)+1;it+=v;ic++}});
         if(ic){ps.totalScores.push(it/ic);hasValid=true}
         ps.items.push({...item,platform:pd.platform});
       });
-      if(hasValid){ev.platforms[pd.platform]=pScores;ev.platforms[pd.platform]._avg=+(Object.values(pScores).filter(v=>typeof v==='number').reduce((a,b)=>a+b,0)/Object.values(pScores).filter(v=>typeof v==='number').length).toFixed(2)}
+      if(hasValid){
+        const pScores={};
+        dims.forEach(dim=>{if(pDimSums[dim.k]&&pDimCounts[dim.k])pScores[dim.k]=+(pDimSums[dim.k]/pDimCounts[dim.k]).toFixed(2)});
+        const validAvgs=Object.values(pScores).filter(v=>typeof v==='number');
+        pScores._avg=validAvgs.length?+(validAvgs.reduce((a,b)=>a+b,0)/validAvgs.length).toFixed(2):0;
+        ev.platforms[pd.platform]=pScores;
+      }
     });
     evaluatorDetail.push(ev);
   });
