@@ -674,38 +674,13 @@ async function loadSum(){
   window.calibration={calibMap,overallBaseline,overallBaselineAvg,calibData};
   // ===== 校准基准结束 =====
   let h='<div class="s"><div class="sh"><div class="sn" style="background:var(--green)">'+all.length+'</div><div class="st">'+all.length+' 份提交</div>'+(failedFiles.length?'<span style="margin-left:8px;font-size:11px;color:var(--red)">⚠ '+failedFiles.length+'个文件加载失败</span>':'')+(all.length-validAll.length?'<span style="margin-left:8px;font-size:11px;color:var(--dim)">分析排除'+(all.length-validAll.length)+'人(全3分)</span>':'')+'<span style="margin-left:auto;font-size:11px;color:var(--dim)">每60秒自动刷新</span><button class="refresh-btn" onclick="loadSum()" style="margin-left:8px">刷新</button></div></div>';
-  // 校准基准板块
-  h+='<div class="s"><div class="sh"><div class="sn" style="background:#f59e0b">校</div><div class="st">校正基准</div></div>';
-  h+='<div style="overflow-x:auto"><table class="dt" style="font-size:12px"><tr><th>测评人</th>';
-  DIMS_12.forEach(dim=>{h+='<th>'+dim.name+'</th>'});
-  h+='<th>均分</th><th>提交数</th><th>校正幅度</th><th>备注</th></tr>';
-  calibData.sort((a,b)=>{
-    const ca=calibMap[a.name],cb=calibMap[b.name];
-    return(cb.offsetAvg||0)-(ca.offsetAvg||0);
-  }).forEach(c=>{
-    const cm=calibMap[c.name];
-    const avg=DIMS_12.reduce((s,dim)=>s+(c.dimAvgs[dim.k]||0),0)/DIMS_12.length;
-    h+='<tr><td><b>'+c.name+'</b></td>';
-    DIMS_12.forEach(dim=>{
-      const v=c.dimAvgs[dim.k]||0;
-      const valid=v>0;
-      const color=v>=2.5?'var(--green)':v>=1.5?'var(--accent)':'var(--red)';
-      h+='<td style="font-weight:700;color:'+(valid?color:'var(--light)')+'">'+(valid?v.toFixed(2):'-')+'</td>';
-    });
-    h+='<td style="font-weight:700">'+(avg>0?avg.toFixed(2):'-')+'</td>';
-    h+='<td>'+c.validCount+'</td>';
-    const oa=cm.offsetAvg||0;
-    const oaColor=oa>0.3?'var(--red)':oa<-0.3?'var(--green)':'var(--text)';
-    h+='<td style="font-weight:700;color:'+oaColor+'">'+(oa>=0?'+':'')+oa.toFixed(2)+'</td>';
-    h+='<td style="font-size:11px;color:var(--dim)">'+cm.note+'</td></tr>';
-  });
-  // 总体校准基准行
-  h+='<tr style="background:var(--bg2);font-weight:700"><td>总体校准基准</td>';
-  DIMS_12.forEach(dim=>{h+='<td>'+(overallBaseline[dim.k]||0).toFixed(2)+'</td>'});
-  h+='<td>'+overallBaselineAvg+'</td><td>'+DIMS_12.reduce((s,dim)=>s+(allMjDimScores[dim.k]||[]).length,0)+'</td><td>-</td><td style="font-size:11px;color:var(--dim)">基准线</td></tr>';
-  h+='</table></div>';
-  h+='<div style="margin-top:8px;font-size:11px;color:var(--dim);padding:0 4px">标准化后得分 = 原始得分 - 该测评人的校准基准 + 总体校准基准<br>校准基准 = 该测评人在"吃碰杠胡了"项目上的平均得分 | 总体校准基准 = 所有测评人在"吃碰杠胡了"项目上的平均得分<br>《吃碰杠胡了》打分少于 3 次的测评人，因统计可靠性不足，使用总体校准基准。标准化后的分数已做边界处理（0~3钳制）</div>';
-  h+='</div>';
+  // 校准基准板块（卡片式）
+  h+='<div class="s"><div class="sh"><div class="sn" style="background:#f59e0b">校</div><div class="st">校正基准</div></div><div class="analysis-grid">';
+  const calibPreview=calibData.filter(c=>c.validCount>=3).sort((a,b)=>(calibMap[b.name].offsetAvg||0)-(calibMap[a.name].offsetAvg||0)).slice(0,3).map(c=>{const oa=calibMap[c.name].offsetAvg||0;return c.name+' '+(oa>=0?'+':'')+oa.toFixed(2)}).join(' | ');
+  h+='<div class="acard" onclick="showAnalysis(\'a_calib\',\'calib\')"><div class="acard-title">校正基准表</div><div class="acard-preview">'+calibPreview+'<br><span style="font-size:10px;color:var(--dim)">基于"吃碰杠胡了"公共case校准</span></div></div>';
+  h+='</div></div>';
+  // 存储校准数据供showAnalysis使用
+  window.a_calib={calibData,calibMap,overallBaseline,overallBaselineAvg,allMjDimScores};
   if(byTarget.gen.length) h+=renderTargetAnalysis('新游戏生成',validAll,DIMS_12);
   if(byTarget.multi.length) h+=renderTargetAnalysis('多轮修改',validAll,DIMS_3);
   // 主观平台排名 — 独立板块
@@ -716,6 +691,30 @@ async function loadSum(){
     window.a_subjective={rankData,sorted:sr};
     h+='<div class="s"><div class="sh"><div class="sn" style="background:#8b5cf6">主</div><div class="st">主观平台排名</div></div><div class="analysis-grid">';
     h+='<div class="acard" onclick="showAnalysis(\'a_subjective\',\'subjective\')"><div class="acard-title">主观平台排名</div><div class="acard-preview">'+sr.slice(0,3).map((x,i)=>(i+1)+'. '+x.platform).join('<br>')+'<br><span style="font-size:10px;color:var(--dim)">'+rankData.length+'人参与</span></div></div>';
+    h+='</div></div>';
+  }
+  // 备注分析板块
+  const platNotes={};
+  validAll.forEach(d=>{
+    (d.data||[]).forEach(pd=>{
+      const plat=pd.platform;
+      (pd.items||[]).forEach(it=>{
+        const note=(it.note||'').trim();
+        if(note&&note!=='0') platNotes.setdefault?0:0;
+        if(note&&note!=='0'){
+          if(!platNotes[plat])platNotes[plat]=[];
+          platNotes[plat].push({name:d.name,note,caseName:it.name||'?'});
+        }
+      });
+    });
+  });
+  const notePlatforms=Object.keys(platNotes).sort();
+  const totalNotes=notePlatforms.reduce((s,p)=>s+platNotes[p].length,0);
+  if(totalNotes){
+    window.a_notes={platNotes,notePlatforms};
+    h+='<div class="s"><div class="sh"><div class="sn" style="background:#06b6d4">备</div><div class="st">备注分析</div></div><div class="analysis-grid">';
+    h+='<div class="acard" onclick="showAnalysis(\'a_notes\',\'remark\')"><div class="acard-title">备注优缺点分析</div><div class="acard-preview">'+notePlatforms.map(p=>p+'('+platNotes[p].length+'条)').join(' | ')+'</div></div>';
+    h+='<div class="acard" onclick="showAnalysis(\'a_notes\',\'wordcloud\')"><div class="acard-title">备注词云</div><div class="acard-preview">高频关键词可视化</div></div>';
     h+='</div></div>';
   }
   h+='<div id="submitList"></div>';
@@ -934,6 +933,165 @@ function showAnalysis(aid,type){
         h+='</tr>';
       });
       h+='</table></div>';
+    }
+  }else if(type==='calib'){
+    h+='校正基准</h2>';
+    const cd=d.calibData||[];const cm=d.calibMap||{};const ob=d.overallBaseline||{};const oba=d.overallBaselineAvg||0;const amds=d.allMjDimScores||{};
+    h+='<div style="overflow-x:auto"><table class="dt" style="font-size:12px"><tr><th>测评人</th>';
+    DIMS_12.forEach(dim=>{h+='<th>'+dim.name+'</th>'});
+    h+='<th>均分</th><th>提交数</th><th>校正幅度</th><th>备注</th></tr>';
+    cd.sort((a,b)=>{const ca=cm[a.name],cb=cm[b.name];return(cb.offsetAvg||0)-(ca.offsetAvg||0)}).forEach(c=>{
+      const cmItem=cm[c.name]||{};
+      const avg=DIMS_12.reduce((s,dim)=>s+(c.dimAvgs[dim.k]||0),0)/DIMS_12.length;
+      h+='<tr><td><b>'+c.name+'</b></td>';
+      DIMS_12.forEach(dim=>{
+        const v=c.dimAvgs[dim.k]||0;const valid=v>0;
+        const color=v>=2.5?'var(--green)':v>=1.5?'var(--accent)':'var(--red)';
+        h+='<td style="font-weight:700;color:'+(valid?color:'var(--light)')+'">'+(valid?v.toFixed(2):'-')+'</td>';
+      });
+      h+='<td style="font-weight:700">'+(avg>0?avg.toFixed(2):'-')+'</td>';
+      h+='<td>'+c.validCount+'</td>';
+      const oa=cmItem.offsetAvg||0;
+      const oaColor=oa>0.3?'var(--red)':oa<-0.3?'var(--green)':'var(--text)';
+      h+='<td style="font-weight:700;color:'+oaColor+'">'+(oa>=0?'+':'')+oa.toFixed(2)+'</td>';
+      h+='<td style="font-size:11px;color:var(--dim)">'+(cmItem.note||'')+'</td></tr>';
+    });
+    h+='<tr style="background:var(--bg2);font-weight:700"><td>总体校准基准</td>';
+    DIMS_12.forEach(dim=>{h+='<td>'+(ob[dim.k]||0).toFixed(2)+'</td>'});
+    h+='<td>'+oba+'</td><td>'+DIMS_12.reduce((s,dim)=>s+(amds[dim.k]||[]).length,0)+'</td><td>-</td><td style="font-size:11px;color:var(--dim)">基准线</td></tr>';
+    h+='</table></div>';
+    h+='<div style="margin-top:12px;font-size:11px;color:var(--dim);padding:0 4px;line-height:1.6">标准化后得分 = 原始得分 - 该测评人的校准基准 + 总体校准基准<br>校准基准 = 该测评人在"吃碰杠胡了"项目上的平均得分 | 总体校准基准 = 所有测评人在"吃碰杠胡了"项目上的平均得分<br>《吃碰杠胡了》打分少于 3 次的测评人，因统计可靠性不足，使用总体校准基准。标准化后的分数已做边界处理（0~3钳制）</div>';
+  }else if(type==='remark'){
+    h+='备注优缺点分析</h2>';
+    const pn=d.platNotes||{};const nps=d.notePlatforms||[];
+    if(!nps.length){h+='<div class="sd">暂无备注数据</div>'}
+    else{
+      // 中文关键词分类（优点/缺点）
+      const positiveWords=['流畅','不错','好','满意','舒适','完整','稳定','合理','还原度高','递增','设计好','可以','还行','能玩','清晰','合适','正确','合格','不错'];
+      const negativeWords=['无法','不能','bug','错误','差','丑','粗糙','卡','死','乱码','失败','中断','问题','不好','无','缺失','不过','不足','偏','慢','难听','不能玩','无法玩','无法启动','报错','卡死','不合理','不到位','不匹配','不符合','无法运行'];
+      nps.forEach(plat=>{
+        const notes=pn[plat]||[];
+        const pros=[],cons=[];
+        notes.forEach(n=>{
+          const text=n.note;
+          // Split by line, categorize each line
+          const lines=text.split(/[\n；;。]/).map(l=>l.trim()).filter(l=>l.length>1);
+          lines.forEach(line=>{
+            const isNeg=negativeWords.some(w=>line.includes(w));
+            const isPos=positiveWords.some(w=>line.includes(w));
+            if(isNeg)cons.push(line);
+            else if(isPos)pros.push(line);
+            else cons.push(line); // 默认归为缺点
+          });
+        });
+        h+='<div style="margin:12px 0 8px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card)">';
+        h+='<div style="font-size:14px;font-weight:700;margin-bottom:8px;color:var(--dark)">'+plat+'<span style="font-size:11px;color:var(--dim);margin-left:8px">'+notes.length+'条备注</span></div>';
+        if(cons.length){
+          h+='<div style="margin-bottom:6px"><span style="font-size:12px;font-weight:600;color:var(--red)">缺点</span>';
+          h+='<ul style="margin:4px 0 0 16px;font-size:12px;line-height:1.6;color:var(--text)">';
+          // 合并相似项
+          const uniqueCons=[...new Set(cons)].slice(0,10);
+          uniqueCons.forEach(c=>{h+='<li>'+c+'</li>'});
+          if(cons.length>10)h+='<li style="color:var(--dim)">...共'+cons.length+'条</li>';
+          h+='</ul></div>';
+        }
+        if(pros.length){
+          h+='<div><span style="font-size:12px;font-weight:600;color:var(--green)">优点</span>';
+          h+='<ul style="margin:4px 0 0 16px;font-size:12px;line-height:1.6;color:var(--text)">';
+          const uniquePros=[...new Set(pros)].slice(0,10);
+          uniquePros.forEach(p=>{h+='<li>'+p+'</li>'});
+          if(pros.length>10)h+='<li style="color:var(--dim)">...共'+pros.length+'条</li>';
+          h+='</ul></div>';
+        }
+        h+='</div>';
+      });
+      // 平台小结
+      h+='<div style="margin-top:16px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg2)">';
+      h+='<div style="font-size:14px;font-weight:700;margin-bottom:8px;color:var(--dark)">平台小结</div>';
+      nps.forEach(plat=>{
+        const notes=pn[plat]||[];
+        let proCnt=0,conCnt=0;
+        notes.forEach(n=>{
+          const text=n.note;
+          const lines=text.split(/[\n；;。]/).map(l=>l.trim()).filter(l=>l.length>1);
+          lines.forEach(line=>{
+            if(negativeWords.some(w=>line.includes(w)))conCnt++;
+            else if(positiveWords.some(w=>line.includes(w)))proCnt++;
+            else conCnt++;
+          });
+        });
+        const ratio=proCnt+conCnt>0?(proCnt/(proCnt+conCnt)*100).toFixed(0):0;
+        const barColor=parseInt(ratio)>=50?'var(--green)':'var(--red)';
+        h+='<div style="margin-bottom:6px;font-size:12px"><b>'+plat+'</b>: 优点'+proCnt+'条 / 缺点'+conCnt+'条 <span style="color:'+barColor+';font-weight:700">（正向'+ratio+'%）</span></div>';
+      });
+      h+='</div>';
+    }
+  }else if(type==='wordcloud'){
+    h+='备注词云</h2>';
+    const pn=d.platNotes||{};const nps=d.notePlatforms||[];
+    if(!nps.length){h+='<div class="sd">暂无备注数据</div>'}
+    else{
+      // 中文分词（简单按2-4字切分+关键词匹配）
+      const stopWords=new Set(['的','了','在','是','我','有','和','就','不','人','都','一','一个','上','也','很','到','说','要','去','你','会','着','没有','看','好','自己','这','他','她','它','们','那','些','个','被','把','让','但','而','或','还','又','则','与','及','对','从','中','以','为','之','其','等','能','可','才','只','已','所以','因为','如果','虽然','但是','不过','这个','那个','什么','怎么','哪','吧','呢','吗','啊','哦','嗯','哈','呀','嘛','么','地','得','过','更','最','比','每','各','无','未','没','如','因','即','若','至','于','下面','上面','里面','外面','后面','前面','左边','右边','还有','并且','以及','通过','进行','之后','之前','比较','还是','或者','虽然','尽管','然而','可是','否则','不仅','而且','因此','所以','于是','接着','随后','同时','此时','当时','之后','后来','最终','最后','另外','此外','其实','确实','真的','真的','非常','特别','相当','十分','极其','过于','稍微','略','稍','较','0','1','2','3']);
+      const allText=nps.map(p=>(pn[p]||[]).map(n=>n.note).join(' ')).join(' ');
+      // 简单中文分词：提取2-4字词组
+      const wordFreq={};
+      // 按标点分割句子
+      const sentences=allText.split(/[\n\r；;。！!？?，,、：:（）()\[\]【】{}""''「」『』<>《》\s]+/).filter(s=>s.length>0);
+      sentences.forEach(s=>{
+        // 提取2-4字子串
+        for(let len=2;len<=4;len++){
+          for(let i=0;i<=s.length-len;i++){
+            const w=s.substring(i,i+len);
+            // 过滤纯数字和停用词
+            if(/^\d+$/.test(w)||stopWords.has(w))continue;
+            // 至少包含一个中文字符
+            if(/[\u4e00-\u9fff]/.test(w)){
+              wordFreq[w]=(wordFreq[w]||0)+1;
+            }
+          }
+        }
+      });
+      // 过滤低频词
+      const words=Object.entries(wordFreq).filter(([w,f])=>f>=2).sort((a,b)=>b[1]-a[1]).slice(0,80);
+      if(!words.length){h+='<div class="sd">词频数据不足</div>'}
+      else{
+        const maxFreq=words[0][1];
+        const minFreq=words[words.length-1][1];
+        // 生成词云SVG
+        const W=700,H=400;
+        h+='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;background:var(--card);border-radius:8px;border:1px solid var(--border)">';
+        const placed=[];
+        const colors=['#ea580c','#2563eb','#16a34a','#dc2626','#7c3aed','#0891b2','#ca8a04','#be185d','#4f46e5','#059669'];
+        words.forEach(([word,freq],idx)=>{
+          const size=12+Math.round((freq-minFreq)/(maxFreq-minFreq+1)*24);
+          const color=colors[idx%colors.length];
+          // 简单放置：随机位置，避免重叠
+          let x,y,ok=false;
+          for(let try_=0;try_<50;try_++){
+            x=30+Math.random()*(W-60);
+            y=20+Math.random()*(H-40);
+            ok=true;
+            for(const p of placed){
+              if(Math.abs(x-p.x)<p.w+20&&Math.abs(y-p.y)<size+4){ok=false;break}
+            }
+            if(ok)break;
+          }
+          if(!ok){x=30+Math.random()*(W-60);y=20+Math.random()*(H-40)}
+          const opacity=0.5+0.5*(freq-minFreq)/(maxFreq-minFreq+1);
+          h+='<text x="'+x+'" y="'+y+'" font-size="'+size+'" fill="'+color+'" opacity="'+opacity.toFixed(2)+'" font-weight="'+(freq>=maxFreq*0.7?'700':'400')+'">'+word+'</text>';
+          placed.push({x,y,w:word.length*size*0.6});
+        });
+        h+='</svg>';
+        // 高频词排行
+        h+='<div style="margin-top:12px;font-size:14px;font-weight:700;margin-bottom:8px">高频词排行 TOP20</div>';
+        h+='<div style="display:flex;flex-wrap:wrap;gap:6px">';
+        words.slice(0,20).forEach(([word,freq],i)=>{
+          const barW=Math.round(freq/maxFreq*100);
+          h+='<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:var(--card);border:1px solid var(--border);font-size:12px"><b>'+word+'</b><span style="color:var(--accent);font-weight:700">'+freq+'</span></span>';
+        });
+        h+='</div>';
+      }
     }
   }else if(type==='trend'){
     h+='多轮趋势分析</h2>';
