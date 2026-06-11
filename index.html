@@ -5,7 +5,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI游戏测评</title>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#fafaf9;--card:#fff;--border:#e7e5e4;--text:#1c1917;--dim:#78716c;--light:#a8a29e;--accent:#ea580c;--abg:#fff7ed;--abr:#fed7aa;--dark:#1c1917;--green:#166534;--gbg:#dcfce7;--yellow:#92400e;--ybg:#fef3c7;--red:#dc2626;--rbg:#fef2f2;--blue:#1e40af;--bbg:#dbeafe}
@@ -31,7 +30,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;ba
 .sn{width:18px;height:18px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0;background:var(--accent)}
 .st{font-size:18px;font-weight:700}
 .sd{color:var(--dim);font-size:14px;margin-bottom:5px;line-height:1.6}
-.prompt-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px 18px;font-size:14px;margin-bottom:8px;cursor:pointer;line-height:1.5;position:relative}
+.prompt-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px 18px;font-size:14px;margin-bottom:8px;cursor:pointer;line-height:1.5;position:relative;white-space:pre-wrap;word-break:break-word}
 .prompt-box::after{content:"\590D\5236";position:absolute;top:8px;right:10px;font-size:10px;padding:2px 8px;background:var(--accent);color:#fff;border-radius:4px;pointer-events:none}
 .prompt-box.copied::after{content:"\2713";background:var(--green)}
 .prompt-box:hover{border-color:var(--accent)}
@@ -132,24 +131,24 @@ const BASE=location.origin+location.pathname;
 const DIMS_12=[
 {k:'stability',name:'功能稳定性',focus:'是否影响游戏的运行？',d:['致命bug无法启动/崩溃/卡死/点击没反应','能运行但核心功能有明显缺失或异常','核心循环可整局跑完，仅1~2个小瑕疵','零Bug，反复多局测试均稳定']},
 {k:'visual',name:'视觉品质',focus:'视觉表达与反馈是否有效',d:['核心元素缺失或无法辨认','核心可辨识但画风/动效有瑕疵不协调','素材齐全画风统一主题清晰协调','有点睛设计或记忆点，有爽感/沉浸感']},
-{k:'audio',name:'音效品质',focus:'音效和BGM是否有效',d:['刺耳/错位/爆音或完全无音效BGM','至少有一种但反馈/听感有瑕疵','配乐完整主题契合听感正常','能调动情绪有层次递进节奏切换']},
-{k:'faithfulness',name:'指令还原度',focus:'prompt有的做了没？做得好不好？',d:['几乎未实现prompt要求严重跑题','大部分实现但有明显遗漏或偏差','所有要求都已实现无遗漏无偏移','完整实现+合理额外细节扩展']},
-{k:'gameplay',name:'玩法设计',focus:'AI扩写的玩法是否合理？',d:['扩写玩法不成立/规则矛盾/死循环','能玩但交互/数值/难度失衡','核心玩法合理数值节奏均衡','有惊喜机制/数值/关卡出彩']},
-{k:'subjective',name:'主观综合',focus:'想不想主动玩或分享？',d:['第一眼劝退或玩一半想关掉','玩几把无感不会再打开','有点上头可以收藏下次玩','想分享出去像成熟游戏']}
+{k:'audio',name:'音效品质',focus:'音效和BGM的表达与反馈是否有效',d:['刺耳/错位/爆音或完全无音效BGM','至少有一种但反馈/听感有瑕疵','配乐完整主题契合听感正常','能调动情绪有层次递进节奏切换']},
+{k:'faithfulness',name:'指令还原度',focus:'是否完整、忠实地实现了prompt要求',d:['几乎未实现prompt要求，严重跑题','实现了部分核心要求，但有较多遗漏或偏差','大部分要求已实现，仅有少量遗漏或细节偏差','所有要求都已实现，无遗漏无偏移']},
+{k:'gameplay',name:'玩法设计',focus:'整体玩法机制合理性如何？（与指令还原度冲突时，玩法不扣分，扣还原度）',d:['玩法不成立——核心机制错误/规则矛盾/死循环/无法通关','能玩但交互/数值/难度失衡，或丰富了但不易理解使用','玩法逻辑合理，数值节奏均衡，难易程度合理','玩法有惊喜——机制/数值/关卡至少一项明显出彩，吸引人持续玩']},
+{k:'subjective',name:'主观综合',focus:'主观上的感受如何？',d:['第一眼劝退，或打开试玩一下马上想关掉','能玩两三下，但整体感觉很粗糙不会主动再打开','能玩五分钟，综合质感贴近小游戏单关卡水平','小超预期，整体制作完成度较高，有接近成熟游戏的感觉']}
 ];
 const DIMS_3=[
 {k:'understanding',name:'需求理解力',focus:'改没改？改多还是改少？',d:['完全没改或答非所问','大方向对但遗漏或多改了','准确理解要改什么不多不少','精确理解且考虑到关联影响']},
 {k:'quality',name:'修改内容质量',focus:'改的好还是坏？',d:['改崩了比修改前更差','勉强改了但质量下降','正确修改质量持平或提升','明显变好整体质量提升']},
 {k:'subjective',name:'主观综合',focus:'修改满意度',d:['完全不满意','不太满意有明显不足','基本满意达到预期','超出预期非常满意']}
 ];
-const SHORT_12=['致命bug/无法启动','能跑但核心异常','正常仅小瑕疵','零Bug稳定','元素缺失/意义不明','可辨识但不协调','统一清晰协调','有点睛/沉浸感','无声/刺耳/爆音','有但瑕疵','完整契合正常','调动情绪/层次','跑题/换机制','有遗漏/偏差','全部实现','完整+合理扩展','扩写玩法不成立','能玩但失衡','合理均衡','有惊喜出彩','第一眼劝退','玩几把无感','想收藏下次玩','想分享出去'];
+const SHORT_12=['致命bug/无法启动','能跑但核心异常','正常仅小瑕疵','零Bug稳定','元素缺失/意义不明','可辨识但不协调','统一清晰协调','有点睛/沉浸感','无声/刺耳/爆音','有但瑕疵','完整契合正常','调动情绪/层次','严重跑题','部分实现有遗漏','大部分实现少遗漏','全部实现无偏移','机制错误/死循环','交互/数值失衡','合理均衡','有惊喜出彩','第一眼劝退','粗糙不会再打开','贴近小游戏水平','接近成熟游戏'];
 const SHORT_3=['没改/答非所问','有遗漏或多改','准确不多不少','精确+关联影响','改崩了更差','勉强但质量降','正确持平提升','明显变好','完全不满意','不太满意','基本满意','超出预期'];
 // ===== CASES =====
 const GDD_CASES=[
 {num:1,name:'挪一挪大师',diff:'简单',cat:'2D_方向逃离_动物',style:'Low-Poly几何农场',gdd:'gdd/1_挪一挪大师.md',prompt:'做一个动物逃离解谜游戏。12x18格棋盘（黄绿交替方格背景），散布多只Q版动物（每只占2x2格），每只有固定朝向（上/下/左/右，白色三角标记）。玩家点击一只动物，它沿朝向直线冲刺：前方无阻挡则冲出棋盘边缘完成逃离消除；撞到其他动物或障碍则立即停止。同一时刻只能有一只动物在移动。消除后空位保留不下落。倒计时限制（<10s变红），全部目标动物逃离即通关。有红色障碍块（带数字表示可被撞击次数）。画风Low-Poly几何农场，无描边纯填色，粉色圆润小猪造型，马卡龙配色明快。3个道具按钮（底部圆形金色）+ 暂停按钮左上角。点击动物有弹性"嘭"音效，逃离成功有欢快短音，撞停有闷响'},
 {num:2,name:'旅行餐车',diff:'简单',cat:'2D_合成合并_经营订单',style:'温馨休闲旅行主题',gdd:'gdd/2_旅行餐车.md',prompt:'做一个合成经营游戏。5x5网格为操作区，玩家自由拖拽物品，两个相同ID物品拖到一起合并升级为下一级（Merge-2机制）。右侧/顶部显示订单需求（需要某等级物品），合成出指定物品后提交订单获星星。网格满时无法生成新物品（从队列/刷新获取新物品放入空格）。通过完成订单推进关卡。画风温馨休闲旅行主题，卡通扁平马卡龙配色，圆润可爱的食材/餐具图标，浅色木纹背景。合成时有清脆"叮"音，提交订单有收银机音效，背景轻快BGM'},
 {num:3,name:'密室消除7',diff:'中等',cat:'2D_三消交换_宝石密室',style:'3D圆润黑描边哑光',gdd:'gdd/3_密室消除7.md',prompt:'做一个宝石三消游戏。可变尺寸网格（默认8x8）填满6色圆角立方体宝石。玩家拖拽交换两个相邻宝石，形成3+同色连线则消除；未形成则动画回退。消除后上方宝石重力下落，顶部随机生成新宝石补位。下落后自动检测新匹配触发连锁cascade循环。倒计时60秒+移动墙从两侧缓慢挤压空间（关卡选配），达标分数过关。画风3D卡通圆润感的2D渲染，方块有圆角立方体外观+黑色轮廓线+纯色哑光材质，暗色密室石墙背景衬托高饱和宝石，消除有碎裂光粒子特效。交换有滑动音，消除有水晶碎裂音效，连锁combo音调递升，背景神秘BGM'},
-{num:4,name:'吃碰杠胡了',diff:'较难',cat:'2.5D_堆叠点消_麻将',style:'清新卡通麻将3D',gdd:'gdd/4_吃碰杠胡了.md',prompt:'做一个2.5D麻将堆叠消除游戏。多层麻将牌以金字塔形状层叠摆放，有上下遮挡关系（2.5D伪立体视角）。只能点击未被上层遮挡的顶层牌，点击后牌飞入底部7格暂存卡槽。卡槽内凑齐3张相同花色牌自动消除腾出空位。卡槽满7张且无法消除则失败。120秒倒计时内清空所有牌即胜利。牌种为麻将花色（万筒条+风箭），每种数量为3的倍数保证可解。画风清新卡通麻将，微拟物3D质感牌面（白底+浅阴影+花色图案），浅绿桌面背景，点击飞入有弧线运动轨迹。点击牌有麻将碰撞声，飞入卡槽有落位音，消除有和牌提示音，背景中式轻音乐'}
+{num:4,name:'吃碰杠胡了',diff:'较难',cat:'2D_堆叠点消_麻将',style:'清新卡通麻将3D',gdd:'gdd/4_吃碰杠胡了.md',prompt:'做一个类似"羊了个羊"的麻将堆叠消除游戏。俯视视角，多层麻将牌层叠摆放呈金字塔状，通过Y轴偏移和阴影表现上下层叠关系（上层牌比下层牌向上偏移几像素并投射阴影，不是真3D旋转）。只能点击未被上层牌覆盖的顶层牌，点击后牌沿弧线飞入底部7格暂存卡槽。卡槽内凑齐3张相同花色牌自动消除腾出空位。卡槽满7张且无法消除则失败。120秒倒计时内清空所有牌即胜利。牌种为麻将花色（万筒条+风箭），每种数量为3的倍数保证可解。画风清新卡通，牌面白底+浅灰投影+花色图案呈现微立体感，浅绿桌面背景。点击牌有麻将碰撞声，飞入卡槽有落位音，消除有和牌提示音，背景中式轻音乐'}
 ];
 const DIRECT_CASES=[
 {num:1,name:'极简合成',diff:'极简',p:'做个合成游戏，有音效'},
@@ -159,53 +158,53 @@ const DIRECT_CASES=[
 {num:5,name:'塔防',diff:'较难',p:'做一个卡通扁平风塔防。俯视绿色草地上有弯曲泥土路径从左到右。3种塔：箭塔便宜单体、炮塔贵范围爆炸、冰塔减速。初始200金币打怪掉金币可升级塔。10波递增第5和10波Boss，基地10血敌人到终点扣1血。顶部显示波次金币血量底部选塔栏。放塔有建造音，射击有对应音效（箭/炮/冰），敌人死亡有爆炸音，Boss出场有警报'}
 ];
 const MULTI_ROUNDS=[
-{label:'轮1 修Bug',p:'点击操作后没有响应，元素不会移动（注：根据实际情况修改此prompt）'},
-{label:'轮2 改玩法',p:'加特殊道具，4连消除生成一个横向炸弹水果，5连生成彩虹水果可消除全部同色。'},
-{label:'轮3 改美术',p:'把所有元素图标换成宝石主题，每种颜色对应不同切割形状（圆形、椭圆、水滴、八角、心形），要有高光反射和内部折射效果'}
+{label:'轮1 改玩法',p:'加特殊道具，4连消除生成一个横向炸弹水果，5连生成彩虹水果可消除全部同色。'},
+{label:'轮2 改美术',p:'把所有元素图标换成宝石主题，每种颜色对应不同切割形状（圆形、椭圆、水滴、八角、心形），要有高光反射和内部折射效果'},
+{label:'轮3 修Bug',p:'点击操作后没有响应，元素不会移动（注：根据实际情况修改此prompt）'}
 ];
-const MULTI_BASE='做个水果三消游戏，8x8的格子，点击两个相邻水果交换位置，3个以上同类水果连成一排就消除，消除后上面的水果掉下来补位。要有分数显示和连击combo效果（combo越高分数倍率越大）。加60秒倒计时，最后10秒数字变红闪烁。如果交换后没有形成消除要自动换回去。4连消除生成一个横向炸弹水果，5连生成彩虹水果可消除全部同色。底部显示3个道具按钮：锤子（点击消除单个水果）、刷新（打乱全部水果位置）、时间+15秒。交换有滑动音，消除有水果碎裂声，combo连击音调递升，倒计时最后10秒有心跳音效，道具使用各有独立音效';
+const MULTI_BASE='做个水果三消游戏，8x8的格子，点击两个相邻水果交换位置，3个以上同类水果连成一排就消除，消除后上面的水果掉下来补位。要有分数显示和连击combo效果（combo越高分数倍率越大）。加60秒倒计时，最后10秒数字变红闪烁。如果交换后没有形成消除要自动换回去。底部显示3个道具按钮：锤子（点击消除单个水果）、刷新（打乱全部水果位置）、时间+15秒。交换有滑动音，消除有水果碎裂声，combo连击音调递升，倒计时最后10秒有心跳音效，道具使用各有独立音效';
 const DEF_PLATS=['我们+Claude4.7','我们+GLM5.1','WB+Claude4.7','WB+GLM5.1'];
 let custPlats=JSON.parse(localStorage.getItem('ep4')||'[]');
 function allPlats(){return[...DEF_PLATS,...custPlats]}
 const U=new URLSearchParams(location.search);
 if(U.get('token')){localStorage.setItem('woa_token',U.get('token'));const u=new URL(location);u.searchParams.delete('token');history.replaceState(null,'',u)}
 let mode=U.get('mode')||(TK?'admin':'summary');
-let cfg={name:U.get('name')||'',platforms:(U.get('platforms')||'').split(',').filter(Boolean),cases:(U.get('cases')||'').split(',').filter(Boolean)};
+let cfg={name:U.get('name')||'',platforms:(U.get('platforms')||'').split(',').filter(Boolean),cases:(U.get('cases')||'').split(',').filter(Boolean)};cfg.cases.sort((a,b)=>(a==='m1'?1:b==='m1'?-1:0));
 let sideTab='gen'; // 'gen' or 'multi'
 let scores={},timers={},fields={},at={};
 async function woaPut(path,content){
   const tk=localStorage.getItem('woa_token')||TK;
+  if(!tk){console.error('woaPut: no token');return false}
   const hdr={'PRIVATE-TOKEN':tk,'Content-Type':'application/json'};
-  // Check if file exists → PUT to update, else POST to create
-  let exists=false;
-  try{const r=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/files?file_path=${encodeURIComponent(path)}&ref=master`,{headers:{'PRIVATE-TOKEN':tk}});if(r.ok)exists=true}catch(e){}
-  const body={file_path:path,branch_name:'master',content,commit_message:'submit'};
-  const method=exists?'PUT':'POST';
-  const r=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/files`,{method,headers:hdr,body:JSON.stringify(body)});
-  if(r.ok){
-    try{
-      const mPath='data/manifest.json';
-      let mExists=false,mFiles=[];
-      try{const mr=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/files?file_path=${encodeURIComponent(mPath)}&ref=master`,{headers:{'PRIVATE-TOKEN':tk}});if(mr.ok){mExists=true;const md=await mr.json();mFiles=JSON.parse(decodeURIComponent(escape(atob(md.content))))}}catch(e){}
-      const fname=path.split('/').pop();
-      if(!mFiles.includes(fname))mFiles.push(fname);
-      const mBody={file_path:mPath,branch_name:'master',content:JSON.stringify(mFiles),commit_message:'manifest'};
-      const mMethod=mExists?'PUT':'POST';
-      await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/files`,{method:mMethod,headers:hdr,body:JSON.stringify(mBody)});
-    }catch(e){}
-  }
-  return r.ok;
+  // POST to create, fall back to PUT if file exists (409)
+  const body={branch_name:'master',content,commit_message:'submit'};
+  let r=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/files?file_path=${encodeURIComponent(path)}&ref=master`,{method:'POST',headers:hdr,body:JSON.stringify(body)});
+  if(!r.ok&&r.status===409){r=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/files?file_path=${encodeURIComponent(path)}&ref=master`,{method:'PUT',headers:hdr,body:JSON.stringify(body)})}
+  if(!r.ok){const txt=await r.text();console.error('woaPut fail:',r.status,txt);return false}
+  try{
+    const mPath='data/manifest.json';let mExists=false,mFiles=[];
+    try{const mr=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/files?file_path=${encodeURIComponent(mPath)}&ref=master`,{headers:{'PRIVATE-TOKEN':tk}});if(mr.ok){mExists=true;const md=await mr.json();if(md.content){const raw=atob(md.content);const bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);mFiles=JSON.parse(new TextDecoder('utf-8').decode(bytes))}}}catch(e){}
+    const fname=path.split('/').pop();if(!mFiles.includes(fname))mFiles.push(fname);
+    const mBody={branch_name:'master',content:JSON.stringify(mFiles),commit_message:'manifest'};
+    const mUrl=`${WOA_API}/projects/${WOA_PROJ}/repository/files?file_path=${encodeURIComponent(mPath)}&ref=master`;
+    const mMethod=mExists?'PUT':'POST';
+    await fetch(mUrl,{method:mMethod,headers:hdr,body:JSON.stringify(mBody)});
+  }catch(e){console.error('manifest update fail:',e)}
+  return true;
 }
 async function woaList(d){
   const tk=localStorage.getItem('woa_token')||TK;
   const hdr=tk?{'PRIVATE-TOKEN':tk}:{};
   try{
-    // Try manifest first
-    try{const r=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/files?file_path=${encodeURIComponent(d+'/manifest.json')}&ref=master`,{headers:hdr});
-    if(r.ok){const md=await r.json();const files=JSON.parse(decodeURIComponent(escape(atob(md.content))));return files.map(name=>({name}))}}catch(e){}
-    // Fallback: list tree
-    const r=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/tree?path=${encodeURIComponent(d)}&ref=master`,{headers:hdr});
+    // Primary: list tree (most reliable, always reflects actual repo state)
+    const r=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/tree?path=${encodeURIComponent(d)}&ref=master&per_page=100`,{headers:hdr});
     if(r.ok){const tree=await r.json();return tree.filter(f=>f.type==='blob'&&f.name.endsWith('.json')&&f.name!=='manifest.json').map(f=>({name:f.name}))}
+    // Fallback: manifest
+    try{const r2=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/files?file_path=${encodeURIComponent(d+'/manifest.json')}&ref=master`,{headers:hdr});
+    if(r2.ok){const md=await r2.json();
+      if(md.content){const raw=atob(md.content);const bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+      const files=JSON.parse(new TextDecoder('utf-8').decode(bytes));return files.map(name=>({name}))}
+    }}catch(e){}
   }catch(e){}
   return[];
 }
@@ -214,13 +213,154 @@ async function woaGet(p){
   const hdr=tk?{'PRIVATE-TOKEN':tk}:{};
   try{
     const r=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/files?file_path=${encodeURIComponent(p)}&ref=master`,{headers:hdr});
-    if(r.ok){const d=await r.json();return JSON.parse(decodeURIComponent(escape(atob(d.content))))}
-  }catch(e){}
+    if(r.ok){const d=await r.json();
+      if(d.content){
+        const raw=atob(d.content);const bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+        const text=new TextDecoder('utf-8').decode(bytes);
+        const result=JSON.parse(text.replace(/[\x00-\x1f]/g,c=>c==='\n'||c==='\r'||c==='\t'?c:''));
+        console.log('woaGet OK:', p, 'name:', result.name, 'platforms:', (result.data||[]).length);
+        return result;
+      }
+      // File too large for base64 API → auto-compress via archive
+      console.log('woaGet: file too large, auto-compressing:', p);
+      const repaired=await autoCompressFile(p);
+      if(repaired)return repaired;
+      console.error('woaGet: auto-compress failed for', p);
+    }else{
+      console.error('woaGet: HTTP', r.status, 'for', p);
+    }
+  }catch(e){console.error('woaGet error:', p, e)}
   return null;
 }
+
+async function autoCompressFile(path){
+  // Download whole repo archive, extract the oversized file, compress images, re-upload
+  const tk=localStorage.getItem('woa_token')||TK;
+  if(!tk)return null;
+  try{
+    const ar=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/archive?ref=master`,{headers:{'PRIVATE-TOKEN':tk}});
+    if(!ar.ok)return null;
+    const blob=await ar.blob();
+    // Parse zip in browser
+    const buf=await blob.arrayBuffer();
+    const entries=await parseZip(buf);
+    const fname=path.split('/').pop();
+    // Find our file in zip entries
+    let fileData=null;
+    for(const [name,data] of entries){
+      if(name.endsWith('/'+fname)||name.endsWith('/data/'+fname)){
+        const raw=new TextDecoder('utf-8').decode(data).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,'');
+        fileData=JSON.parse(raw);break;
+      }
+    }
+    if(!fileData)return null;
+    // Compress all images in the data
+    for(const pd of(fileData.data||[])){for(const item of(pd.items||[])){
+      if(item.imgs&&item.imgs.length){item.imgs=await compressImgs(item.imgs)}
+    }}
+    const compressed=JSON.stringify(fileData).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,'');
+    console.log('autoCompressFile:', fname, 'compressed, re-uploading...');
+    // Re-upload compressed version (PUT with file_path in URL)
+    const hdr={'PRIVATE-TOKEN':tk,'Content-Type':'application/json'};
+    const body={branch_name:'master',content:compressed,commit_message:'auto-compress oversized file'};
+    const r=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/files?file_path=${encodeURIComponent(path)}&ref=master`,{method:'PUT',headers:hdr,body:JSON.stringify(body)});
+    if(r.ok){console.log('autoCompressFile: re-uploaded successfully');toast('已自动压缩并修复: '+fname);return fileData}
+    else{const t=await r.text();console.error('autoCompressFile: upload failed',r.status,t);return fileData}
+  }catch(e){console.error('autoCompressFile error:',e);return null}
+}
+
+async function parseZip(buf){
+  // Minimal ZIP parser - extracts stored and deflated files
+  const view=new DataView(buf);
+  const entries=new Map();
+  const uint8=new Uint8Array(buf);
+  // Find End of Central Directory
+  let eocd=-1;
+  for(let i=buf.byteLength-22;i>=0;i--){
+    if(view.getUint32(i,true)===0x06054b50){eocd=i;break}
+  }
+  if(eocd<0)return entries;
+  const cdOffset=view.getUint32(eocd+16,true);
+  const cdCount=view.getUint16(eocd+10,true);
+  let off=cdOffset;
+  for(let i=0;i<cdCount;i++){
+    if(view.getUint32(off,true)!==0x02014b50)break;
+    const method=view.getUint16(off+10,true);
+    const compSize=view.getUint32(off+20,true);
+    const uncompSize=view.getUint32(off+24,true);
+    const nameLen=view.getUint16(off+28,true);
+    const extraLen=view.getUint16(off+30,true);
+    const commentLen=view.getUint16(off+32,true);
+    const localOff=view.getUint32(off+42,true);
+    const name=new TextDecoder().decode(uint8.slice(off+46,off+46+nameLen));
+    // Read local file header to get data offset
+    const lhNameLen=view.getUint16(localOff+26,true);
+    const lhExtraLen=view.getUint16(localOff+28,true);
+    const dataOff=localOff+30+lhNameLen+lhExtraLen;
+    if(name.endsWith('/')){off+=46+nameLen+extraLen+commentLen;continue}
+    let data;
+    if(method===0){data=uint8.slice(dataOff,dataOff+uncompSize)}
+    else if(method===8){
+      // Inflate using DecompressionStream
+      const cs=new DecompressionStream('deflate-raw');
+      const writer=cs.writable.getWriter();
+      writer.write(uint8.slice(dataOff,dataOff+compSize));
+      writer.close();
+      const reader=cs.readable.getReader();
+      const chunks=[];
+      while(true){const{done,value}=await reader.read();if(done)break;chunks.push(value)}
+      const total=chunks.reduce((s,c)=>s+c.length,0);
+      data=new Uint8Array(total);let pos=0;for(const c of chunks){data.set(c,pos);pos+=c.length}
+    }else{off+=46+nameLen+extraLen+commentLen;continue}
+    entries.set(name,data);
+    off+=46+nameLen+extraLen+commentLen;
+  }
+  return entries;
+}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2e3)}
-function cp(el,t){navigator.clipboard.writeText(t);el.classList.add('copied');setTimeout(()=>el.classList.remove('copied'),1e3)}
+function cp(el){
+  const key=el.dataset.copy;
+  let text='';
+  if(key==='m0')text=MULTI_BASE;
+  else if(key.startsWith('mr')){const ri=+key.slice(2)-1;text=MULTI_ROUNDS[ri]?.p||''}
+  else if(key.startsWith('g')){const num=+key.slice(1);const c=GDD_CASES.find(x=>x.num===num);text=c?.prompt||''}
+  else if(key.startsWith('d')){const num=+key.slice(1);const c=DIRECT_CASES.find(x=>x.num===num);text=c?.p||''}
+  if(!text)return;
+  navigator.clipboard.writeText(text).then(()=>{el.classList.add('copied');setTimeout(()=>el.classList.remove('copied'),1e3)});
+}
 function setS(k,v){scores[k]=v;document.querySelectorAll(`[data-k="${k}"]`).forEach(b=>{b.className='sc'+(scores[k]==+b.dataset.v?' a'+b.dataset.v:'')})}
+// ===== RANK DRAG =====
+let _dragEl=null;
+function rankDragStart(e){_dragEl=e.target.closest('.rank-item');e.dataTransfer.effectAllowed='move';setTimeout(()=>{_dragEl.style.opacity='0.4'},0)}
+function rankDragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';const item=e.target.closest('.rank-item');if(item&&item!==_dragEl){const list=item.closest('.rank-list');const items=[...list.querySelectorAll('.rank-item')];const di=items.indexOf(_dragEl),ti=items.indexOf(item);if(di<ti)item.after(_dragEl);else item.before(_dragEl)}}
+function rankDrop(e){e.preventDefault();rankSaveList(e.target.closest('.rank-list'))}
+function rankDragEnd(e){if(_dragEl)_dragEl.style.opacity='';const list=_dragEl.closest('.rank-list');if(list)rankSaveList(list)}
+function rankSaveList(list){
+  if(!list)return;
+  const caseKey=list.dataset.casekey;
+  const items=list.querySelectorAll('.rank-item');
+  const platNames=[];
+  items.forEach((el,i)=>{el.querySelector('span').textContent=i+1;const pk=el.dataset.pk;const p=cfg.platforms.find(x=>x.replace(/[^a-zA-Z0-9]/g,'_')===pk);platNames.push(p||pk)});
+  localStorage.setItem('rank_'+cfg.name+'_'+caseKey,JSON.stringify(platNames));
+}
+function getCaseRanking(caseKey){
+  const list=document.querySelector('.rank-list[data-casekey="'+caseKey+'"]');
+  if(!list)return[];
+  const result=[];
+  list.querySelectorAll('.rank-item').forEach((el,i)=>{const pk=el.dataset.pk;const p=cfg.platforms.find(x=>x.replace(/[^a-zA-Z0-9]/g,'_')===pk);result.push({rank:i+1,platform:p||pk})});
+  return result;
+}
+function rankWidget(caseKey){
+  const savedRank=JSON.parse(localStorage.getItem('rank_'+cfg.name+'_'+caseKey)||'null');
+  const rankOrder=savedRank||[...cfg.platforms];
+  let h='<div class="s" style="border-color:var(--ybg);background:var(--ybg)"><div class="sh"><div class="sn" style="background:var(--yellow)">★</div><div class="st">平台综合排名</div></div><div style="font-size:10px;color:var(--yellow);margin-bottom:4px">依据整体感受拖动排序，第1名=最好，必须分高低不能并列</div><div class="rank-list" data-casekey="'+caseKey+'" style="display:flex;flex-direction:column;gap:3px">';
+  rankOrder.forEach((plat,ri)=>{
+    const pk=plat.replace(/[^a-zA-Z0-9]/g,'_');
+    h+='<div class="rank-item" data-pk="'+pk+'" draggable="true" ondragstart="rankDragStart(event)" ondragover="rankDragOver(event)" ondrop="rankDrop(event)" ondragend="rankDragEnd(event)" style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--card);border:1px solid var(--border);border-radius:5px;cursor:grab;font-size:12px;font-weight:500"><span style="color:var(--accent);font-size:12px;font-weight:700;min-width:16px">'+(ri+1)+'</span><span style="flex:1">'+plat+'</span><span style="color:var(--light);font-size:9px">☰</span></div>';
+  });
+  h+='</div></div>';
+  return h;
+}
 function go(m){mode=m;render()}
 function render(){
   const isTester=mode==='tester'&&cfg.name&&cfg.platforms.length;
@@ -235,12 +375,14 @@ function renderSide(){
   const hasGen=cfg.cases.some(c=>c.startsWith('g')||c.startsWith('d'));
   let h='';
   if(hasGen&&hasMulti){
-    h+='<div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:8px"><button class="plat-tab'+(sideTab==='gen'?' active':'')+'" onclick="sideTab=\'gen\';renderSide()">目标①② 生成</button><button class="plat-tab'+(sideTab==='multi'?' active':'')+'" onclick="sideTab=\'multi\';renderSide()">目标③ 修改</button></div>';
+    h+='<div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:8px"><button class="plat-tab'+(sideTab==='gen'?' active':'')+'" onclick="sideTab=\'gen\';renderSide()">新游戏生成</button><button class="plat-tab'+(sideTab==='multi'?' active':'')+'" onclick="sideTab=\'multi\';renderSide()">多轮修改</button></div>';
   } else if(hasMulti){sideTab='multi'} else {sideTab='gen'}
   const dims=sideTab==='multi'?DIMS_3:DIMS_12;
-  const label=sideTab==='multi'?'目标③ 多轮修改':'目标①② 生成效果';
-  h+='<h3>'+label+' 评分标准</h3><div style="margin-bottom:8px;padding:6px 8px;background:var(--abg);border-radius:5px;font-size:10px;color:var(--accent)"><b>档位：</b>0不可用 · 1及格 · 2好用 · 3超预期</div>';
+  const desc=sideTab==='multi'?'先输入基础Prompt得到游戏，在此基础上进行多轮对话修改测试并打分':'复制Prompt，选择不同平台和模型，测试游戏效果并打分';
+  const label=sideTab==='multi'?'多轮修改 评分标准':'新游戏生成 评分标准';
+  h+='<h3>'+label+'</h3><div style="margin-bottom:6px;padding:6px 8px;background:var(--bbg);border-radius:5px;font-size:10px;color:var(--blue)">'+desc+'</div><div style="margin-bottom:8px;padding:6px 8px;background:var(--abg);border-radius:5px;font-size:10px;color:var(--accent)"><b>档位：</b>0不可用 · 1及格 · 2好用 · 3超预期</div>';
   dims.forEach(dim=>{h+='<h4>'+dim.name+'</h4>';if(dim.focus)h+='<div class="focus">'+dim.focus+'</div>';h+=dim.d.map((desc,i)=>'<div class="row"><b class="c'+i+'">'+i+'</b> '+desc+'</div>').join('')});
+  h+='<h4>平台排名</h4><div class="focus">依据整体感受，给各平台排名：高→低（必须分高低，不能并列）</div><div class="row" style="font-size:10px;color:var(--dim)"><b style="color:var(--accent)">例：</b>我们Claude > WB Claude > 我们GLM > WB GLM</div>';
   document.getElementById('side').innerHTML=h;
 }
 function getDimsFor(caseId){return caseId==='m1'?DIMS_3:DIMS_12}
@@ -249,6 +391,14 @@ function getShortsFor(caseId){return caseId==='m1'?SHORT_3:SHORT_12}
 function testerH(){
   if(!cfg.platforms.length)return'<div class="s"><div class="st">请通过管理员链接进入</div></div>';
   let h='<div class="s"><div class="sh"><div class="sn" style="background:var(--dark)">i</div><div class="st">测评信息</div></div><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><span style="font-size:12px;color:var(--dim)">姓名：</span><input id="nameField" value="'+(cfg.name||'')+'" placeholder="请输入姓名（必填）" style="padding:6px 10px;border:1px solid var(--border);border-radius:5px;font-size:13px;width:150px" onchange="cfg.name=this.value.trim()"></div><div class="sd"><b>'+cfg.platforms.join(' / ')+'</b></div></div>';
+  // 操作说明
+  const hasGdd=cfg.cases.some(c=>c.startsWith('g'));
+  const hasDirect=cfg.cases.some(c=>c.startsWith('d'));
+  const hasMulti=cfg.cases.some(c=>c==='m1');
+  h+='<div class="s" style="border-color:var(--bbg);background:var(--bbg)"><div class="sh"><div class="sn" style="background:var(--blue)">?</div><div class="st">操作说明</div></div>';
+  if(hasGdd||hasDirect)h+='<div style="margin-bottom:6px;padding:6px 10px;background:var(--card);border-radius:5px;font-size:12px;line-height:1.6"><b style="color:#6d28d9">新游戏生成：</b>复制Prompt → 选择不同平台和模型 → 测试游戏效果 → 按评分标准打分</div>';
+  if(hasMulti)h+='<div style="margin-bottom:6px;padding:6px 10px;background:var(--card);border-radius:5px;font-size:12px;line-height:1.6"><b style="color:#be185d">多轮修改：</b>先输入基础Prompt得到游戏 → 在此基础上进行多轮对话修改 → 按评分标准打分</div>';
+  h+='</div>';
   // Render all selected cases
   let ci=0;
   cfg.cases.forEach(caseId=>{
@@ -256,40 +406,32 @@ function testerH(){
     if(caseId.startsWith('g')){
       const num=parseInt(caseId.slice(1));const c=GDD_CASES.find(x=>x.num===num);if(!c)return;
       const dims=DIMS_12,shorts=SHORT_12;
-      h+='<div class="s"><div class="sh"><div class="sn">'+ci+'</div><div class="st">'+c.name+'</div><span style="margin-left:4px;font-size:10px;padding:2px 6px;border-radius:4px;background:#ede9fe;color:#6d28d9">①GDD</span>'+(c.diff?'<span style="margin-left:auto;font-size:10px;padding:2px 8px;border-radius:4px;background:'+(c.diff==='简单'?'var(--gbg);color:var(--green)':c.diff==='中等'?'var(--ybg);color:var(--yellow)':'var(--rbg);color:var(--red)')+'">'+c.diff+'</span>':'')+'</div>';
+      h+='<div class="s"><div class="sh"><div class="sn">'+ci+'</div><div class="st">'+c.name+'</div><span style="margin-left:4px;font-size:10px;padding:2px 6px;border-radius:4px;background:#ede9fe;color:#6d28d9">新游戏生成</span>'+(c.diff?'<span style="margin-left:auto;font-size:10px;padding:2px 8px;border-radius:4px;background:'+(c.diff==='简单'?'var(--gbg);color:var(--green)':c.diff==='中等'?'var(--ybg);color:var(--yellow)':'var(--rbg);color:var(--red)')+'">'+c.diff+'</span>':'')+'</div>';
       if(c.cat)h+='<div class="sd" style="margin-bottom:4px">'+c.cat+(c.style?' · '+c.style:'')+'</div>';
-      if(c.gdd)h+='<a href="'+c.gdd+'" download style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);text-decoration:none;margin-bottom:6px;padding:4px 10px;border:1px solid var(--accent);border-radius:5px">下载GDD文档</a>';
-      if(c.prompt)h+='<div class="prompt-box" onclick="cp(this,`'+c.prompt.replace(/`/g,"'")+`\`)">` +c.prompt+'</div>';
+      if(c.prompt)h+='<div class="prompt-box" data-copy="g'+c.num+'">'+c.prompt+'</div>';
       h+=scoreGrid(caseId,dims,shorts);
       h+='</div>';
     }else if(caseId.startsWith('d')){
       const num=parseInt(caseId.slice(1));const c=DIRECT_CASES.find(x=>x.num===num);if(!c)return;
       const dims=DIMS_12,shorts=SHORT_12;
-      h+='<div class="s"><div class="sh"><div class="sn">'+ci+'</div><div class="st">'+c.name+'</div><span style="margin-left:4px;font-size:10px;padding:2px 6px;border-radius:4px;background:#e0f2fe;color:#0369a1">②需求</span>'+(c.diff?'<span style="margin-left:auto;font-size:10px;padding:2px 8px;border-radius:4px;background:'+(c.diff==='简单'||c.diff==='极简'?'var(--gbg);color:var(--green)':c.diff==='中等'?'var(--ybg);color:var(--yellow)':'var(--rbg);color:var(--red)')+'">'+c.diff+'</span>':'')+'</div>';
-      if(c.p)h+='<div class="prompt-box" onclick="cp(this,`'+c.p.replace(/`/g,"'")+`\`)">` +c.p+'</div>';
+      h+='<div class="s"><div class="sh"><div class="sn">'+ci+'</div><div class="st">'+c.name+'</div><span style="margin-left:4px;font-size:10px;padding:2px 6px;border-radius:4px;background:#e0f2fe;color:#0369a1">新游戏生成</span>'+(c.diff?'<span style="margin-left:auto;font-size:10px;padding:2px 8px;border-radius:4px;background:'+(c.diff==='简单'||c.diff==='极简'?'var(--gbg);color:var(--green)':c.diff==='中等'?'var(--ybg);color:var(--yellow)':'var(--rbg);color:var(--red)')+'">'+c.diff+'</span>':'')+'</div>';
+      if(c.p)h+='<div class="prompt-box" data-copy="d'+c.num+'">'+c.p+'</div>';
       h+=scoreGrid(caseId,dims,shorts);
       h+='</div>';
     }else if(caseId==='m1'){
       const dims=DIMS_3,shorts=SHORT_3;
-      h+='<div class="s" style="border-color:var(--abr);background:var(--abg)"><div class="sh"><div class="sn" style="background:var(--dark)">0</div><div class="st">③多轮修改 - 基础Prompt</div><span style="margin-left:4px;font-size:10px;padding:2px 6px;border-radius:4px;background:#fce7f3;color:#be185d">③修改</span></div><div class="prompt-box" onclick="cp(this,`'+MULTI_BASE.replace(/`/g,"'")+`\`)">` +MULTI_BASE+'</div></div>';
-      h+='<div class="plat-tabs" data-scene="multi">';
-      cfg.platforms.forEach((plat,pi)=>{h+='<button class="plat-tab'+(pi===0?' active':'')+'" onclick="switchPlatTab(this,\'multi\','+pi+')">'+plat+'</button>'});
-      h+='</div>';
-      cfg.platforms.forEach((plat,pi)=>{
-        const pk=plat.replace(/[^a-zA-Z0-9]/g,'_');
-        h+='<div class="plat-panel" data-scene="multi" data-pi="'+pi+'" style="'+(pi===0?'':'display:none')+'">';
-        MULTI_ROUNDS.forEach((r,ri)=>{
-          const base=pk+'_multi_r'+(ri+1);
-          h+='<div class="s"><div class="sh"><div class="sn">'+(ri+1)+'</div><div class="st">'+r.label+'</div></div>';
-          h+='<div class="prompt-box" onclick="cp(this,`'+r.p.replace(/`/g,"'")+'`)">'+r.p+'</div>';
-          h+=scoreSingle(base,dims,shorts);
-          h+='</div>';
-        });
+      h+='<div class="s" style="border-color:var(--abr);background:var(--abg)"><div class="sh"><div class="sn" style="background:var(--dark)">0</div><div class="st">多轮修改 - 基础Prompt</div><span style="margin-left:4px;font-size:10px;padding:2px 6px;border-radius:4px;background:#fce7f3;color:#be185d">修改</span></div><div class="prompt-box" data-copy="m0">'+MULTI_BASE+'</div></div>';
+      MULTI_ROUNDS.forEach((r,ri)=>{
+        h+='<div class="s"><div class="sh"><div class="sn">'+(ri+1)+'</div><div class="st">'+r.label+'</div></div>';
+        h+='<div class="prompt-box" data-copy="mr'+(ri+1)+'">'+r.p+'</div>';
+        h+=scoreGrid('multi_r'+(ri+1),dims,shorts);
         h+='</div>';
       });
     }
   });
-  h+='<div class="submit-bar"><span style="font-size:9px;color:var(--dim)">全部打完后提交</span><button style="padding:6px 12px;background:var(--bg);border:1px solid var(--border);border-radius:5px;font-size:11px;cursor:pointer" onclick="expMyExcel()">Excel</button><button style="padding:6px 12px;background:var(--bg);border:1px solid var(--border);border-radius:5px;font-size:11px;cursor:pointer" onclick="expMyHtml()">HTML</button><button class="submit-btn" id="subBtn" onclick="doSubmit()">提交</button></div>';
+  // Global ranking - one per tester
+  h+=rankWidget('global');
+  h+='<div class="submit-bar"><span style="font-size:9px;color:var(--dim)">全部打完后操作</span><div style="display:flex;gap:8px"><button class="submit-btn" style="background:#fff;color:#ea580c;border:2px solid #ea580c" onclick="expMyHtml()">导出HTML</button><button class="submit-btn" style="background:#ea580c" onclick="doSubmit()" id="subBtn">提交</button></div></div>';
   return h;
 }
 function scoreSingle(base,dims,shorts){
@@ -303,7 +445,7 @@ function scoreSingle(base,dims,shorts){
   h+='<div class="extras"><input placeholder="游戏链接或ID" style="flex:1" value="'+(fields[base+'_link']||'')+'" onchange="fields[\''+base+'_link\']=this.value"></div>';
   h+='<div class="extras"><textarea placeholder="备注" style="flex:1;min-height:26px;resize:vertical;overflow:hidden" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'" onchange="fields[\''+base+'_n\']=this.value">'+(fields[base+'_n']||'')+'</textarea></div>';
   h+='<div class="img-zone" data-imgbase="'+base+'" tabindex="0" ondrop="dropImg(event,\''+base+'\')" ondragover="event.preventDefault();this.classList.add(\'drag-over\')" ondragleave="this.classList.remove(\'drag-over\')">';
-  h+='<div class="img-zone-label">截图（点击+/拖入/Ctrl+V）</div><div class="img-list">';
+  h+='<div class="img-zone-label">截图（点击+/拖入/Ctrl+V）</div><div style="font-size:10px;color:var(--light);margin-bottom:4px;margin-top:-4px">💡 直接截图后粘贴即可放入图片</div><div class="img-list">';
   const imgs=fields[base+'_imgs']||[];
   imgs.forEach((src,ii)=>{h+='<div class="img-thumb"><img src="'+src+'"><div class="img-del" onclick="event.stopPropagation();rmImg(\''+base+'\','+ii+')">x</div></div>'});
   if(imgs.length<4){h+='<label class="img-add"><input type="file" accept="image/*" style="display:none" onchange="addImg(\''+base+'\',this)">+</label>'}
@@ -349,11 +491,10 @@ function adminH(){
     h+='<div style="display:flex;gap:3px;margin-top:2px"><input id="np'+i+'" placeholder="+自定义" style="padding:3px 5px;border:1px solid var(--border);border-radius:3px;font-size:9px;width:80px"><button style="padding:2px 5px;background:var(--abg);border:1px solid var(--abr);border-radius:3px;font-size:8px;cursor:pointer;color:var(--accent)" onclick="addP('+i+')">+</button></div>';
     h+='<div class="lbl">Case（混选）<span onclick="assigns['+i+'].cases=allCaseIds();saveA();render()">全选</span><span class="cl" onclick="assigns['+i+'].cases=[];saveA();render()">清空</span></div>';
     h+='<div class="cg">';
-    h+='<span style="font-size:9px;font-weight:700;color:#6d28d9;width:100%">①GDD:</span>';
+    h+='<span style="font-size:9px;font-weight:700;color:#6d28d9;width:100%">新游戏生成测试:</span>';
     h+=GDD_CASES.map(c=>{const id='g'+c.num;return'<label><input type="checkbox" '+((a.cases||[]).includes(id)?'checked':'')+' onchange="togA('+i+',\'cases\',\''+id+'\')">'+c.num+'.'+c.name+'</label>'}).join('');
-    h+='<span style="font-size:9px;font-weight:700;color:#0369a1;width:100%;margin-top:3px">②需求:</span>';
     h+=DIRECT_CASES.map(c=>{const id='d'+c.num;return'<label><input type="checkbox" '+((a.cases||[]).includes(id)?'checked':'')+' onchange="togA('+i+',\'cases\',\''+id+'\')">'+c.num+'.'+c.name+'</label>'}).join('');
-    h+='<span style="font-size:9px;font-weight:700;color:#be185d;width:100%;margin-top:3px">③修改:</span>';
+    h+='<span style="font-size:9px;font-weight:700;color:#be185d;width:100%;margin-top:3px">多轮对话修改测试:</span>';
     h+='<label><input type="checkbox" '+((a.cases||[]).includes('m1')?'checked':'')+' onchange="togA('+i+',\'cases\',\'m1\')">多轮修改(3轮)</label>';
     h+='</div>';
     h+='<div class="lo"><span style="flex:1">'+(link||'填姓名+选平台+选case')+'</span>'+(link?'<button class="cp" onclick="navigator.clipboard.writeText(\''+link+'\');toast(\'已复制\')">复制</button>':'')+'</div></div>';
@@ -369,15 +510,53 @@ function addP(i){const el=document.getElementById('np'+i);const n=el.value.trim(
 function saveA(){localStorage.setItem('ea_v4',JSON.stringify(assigns))}
 function mkLink(a){if(!a.name||!(a.platforms||[]).length||!(a.cases||[]).length)return'';const tk=localStorage.getItem('woa_token')||'';return BASE+'?token='+encodeURIComponent(tk)+'&name='+encodeURIComponent(a.name)+'&platforms='+encodeURIComponent(a.platforms.join(','))+'&cases='+encodeURIComponent((a.cases||[]).join(','))+'&mode=tester'}
 // ===== SUBMIT =====
-async function doSubmit(){
-  const nameEl=document.getElementById('nameField');if(nameEl)cfg.name=nameEl.value.trim();if(!cfg.name){toast('请输入姓名');return}
-  const btn=document.getElementById('subBtn');btn.textContent='...';btn.disabled=true;
-  const result=getMyData();
-  const ok=await woaPut('data/'+cfg.name+'_'+Date.now()+'.json',JSON.stringify(result,null,2));
-  btn.textContent=ok?'OK':'fail';if(ok)toast('已提交');else btn.disabled=false;
+function validateRequired(){
+  const nameEl=document.getElementById('nameField');if(nameEl)cfg.name=nameEl.value.trim();
+  if(!cfg.name) return '请输入姓名';
+  const missing=[];
+  cfg.platforms.forEach(plat=>{
+    const pk=plat.replace(/[^a-zA-Z0-9]/g,'_');
+    cfg.cases.forEach(caseId=>{
+      if(caseId==='m1'){
+        MULTI_ROUNDS.forEach((r,ri)=>{
+          const base=pk+'_multi_r'+(ri+1);
+          DIMS_3.forEach(d=>{if(scores[base+'_'+d.k]===undefined)missing.push(plat+' '+r.label+' '+d.name)});
+          if(!fields[base+'_link'])missing.push(plat+' '+r.label+' 链接');
+        });
+      }else{
+        const base=pk+'_'+caseId;
+        const num=parseInt(caseId.slice(1));
+        const isGdd=caseId.startsWith('g');
+        const cObj=isGdd?GDD_CASES.find(x=>x.num===num):DIRECT_CASES.find(x=>x.num===num);
+        DIMS_12.forEach(d=>{if(scores[base+'_'+d.k]===undefined)missing.push(plat+' '+(cObj?cObj.name:caseId)+' '+d.name)});
+        if(!fields[base+'_link'])missing.push(plat+' '+(cObj?cObj.name:caseId)+' 链接');
+      }
+    });
+  });
+  const rk=getCaseRanking('global');
+  if(!rk.length)missing.push('平台排名');
+  if(missing.length) return '还有 '+missing.length+' 项未填：'+missing.slice(0,5).join('、')+(missing.length>5?'...':'');
+  return '';
 }
-function getMyData(){
-  const result={name:cfg.name,platforms:cfg.platforms,cases:cfg.cases,time:new Date().toISOString(),data:[]};
+async function doSubmit(){
+  const err=validateRequired();if(err){toast(err);return}
+  const btn=document.getElementById('subBtn');btn.textContent='提交中…';btn.disabled=true;
+  try{
+  const result=await getMyData();
+  // Sanitize JSON: remove control characters that break JSON.parse
+  const raw=JSON.stringify(result,null,2);
+  const clean=raw.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,'');
+  const ok=await woaPut('data/'+cfg.name+'_'+Date.now()+'.json',clean);
+  if(ok){btn.textContent='✓ 已提交';toast('已提交')}else{btn.textContent='提交';btn.disabled=false;toast('提交失败，请检查Token是否有效')}
+  }catch(e){btn.textContent='提交';btn.disabled=false;toast('提交出错: '+e.message);console.error('doSubmit error',e)}
+}
+function compressImgs(imgs){
+  return Promise.all(imgs.map(img=>new Promise(resolve=>{
+    if(!img||typeof img!=='string'){resolve(img);return}
+    const i=new Image();i.onload=()=>{const c=document.createElement('canvas');const maxW=400;let w=i.width,h=i.height;if(w>maxW){h=Math.round(h*maxW/w);w=maxW}c.width=w;c.height=h;c.getContext('2d').drawImage(i,0,0,w,h);resolve(c.toDataURL('image/jpeg',0.6))};i.onerror=()=>resolve(img);i.src=img})));
+}
+async function getMyData(){
+  const result={name:cfg.name,platforms:cfg.platforms,cases:cfg.cases,time:new Date().toISOString(),data:[],ranking:getCaseRanking('global')};
   cfg.platforms.forEach(plat=>{
     const pk=plat.replace(/[^a-zA-Z0-9]/g,'_');
     const pd={platform:plat,items:[]};
@@ -387,7 +566,7 @@ function getMyData(){
           const base=pk+'_multi_r'+(ri+1);
           const item={type:'multi',round:ri+1,roundLabel:r.label,scores:{},link:fields[base+'_link']||'',note:fields[base+'_n']||'',imgs:fields[base+'_imgs']||[]};
           DIMS_3.forEach(d=>{item.scores[d.k]=scores[base+'_'+d.k]});
-          const v=Object.values(item.scores).filter(x=>x!==undefined);
+          const v=Object.values(item.scores).filter(x=>x!==undefined&&x!==0);
           item.avg=v.length?(v.reduce((a,b)=>a+b,0)/v.length).toFixed(2):'';
           pd.items.push(item);
         });
@@ -398,82 +577,147 @@ function getMyData(){
         const cObj=isGdd?GDD_CASES.find(x=>x.num===num):DIRECT_CASES.find(x=>x.num===num);
         const item={type:isGdd?'gdd':'direct',name:cObj?cObj.name:'',caseId,scores:{},link:fields[base+'_link']||'',note:fields[base+'_n']||'',imgs:fields[base+'_imgs']||[]};
         DIMS_12.forEach(d=>{item.scores[d.k]=scores[base+'_'+d.k]});
-        const v=Object.values(item.scores).filter(x=>x!==undefined);
+        const v=Object.values(item.scores).filter(x=>x!==undefined&&x!==0);
         item.avg=v.length?(v.reduce((a,b)=>a+b,0)/v.length).toFixed(2):'';
         pd.items.push(item);
       }
     });
     result.data.push(pd);
   });
+  // 压缩所有图片
+  for(const pd of result.data){for(const item of pd.items){if(item.imgs&&item.imgs.length){item.imgs=await compressImgs(item.imgs)}}}
   return result;
 }
 // ===== SUMMARY =====
+let _autoRefreshTimer=null;
+function startAutoRefresh(){if(_autoRefreshTimer)clearInterval(_autoRefreshTimer);_autoRefreshTimer=setInterval(()=>{loadSum()},60000)}
+function stopAutoRefresh(){if(_autoRefreshTimer){clearInterval(_autoRefreshTimer);_autoRefreshTimer=null}}
 async function loadSum(){
+  const app=document.getElementById('app');
+  const hadData=!!(window._d&&window._d.length);
+  if(hadData){const old=app.querySelector('.refresh-btn');if(old){old.disabled=true;old.textContent='加载中…'}}
+  else{app.innerHTML='<div class="s"><div class="sd">加载中…</div></div>'}
   try{
-  const files=await woaList('data');const all=[];const fnames=[];
-  for(const f of files){if(!f.name.endsWith('.json')||f.name==='manifest.json')continue;const d=await woaGet('data/'+f.name);if(d){all.push(d);fnames.push(f.name)}}
+  const files=await woaList('data');const all=[];const fnames=[];const failedFiles=[];
+  for(const f of files){if(!f.name.endsWith('.json')||f.name==='manifest.json')continue;
+    const d=await woaGet('data/'+f.name);
+    if(d){all.push(d);fnames.push(f.name)}else{failedFiles.push(f.name)}
+  }
   window._files=fnames;
   if(!all.length){document.getElementById('app').innerHTML=`<div class="s"><div class="sd">${TK?"暂无提交数据":"请输入Token查看数据"}</div><div style="margin-top:8px"><input type="password" placeholder="粘贴工蜂Token" value="${TK}" style="width:100%;padding:8px;border:1px solid #e7e5e4;border-radius:6px;font-size:12px" onchange="localStorage.setItem('woa_token',this.value);location.reload()"></div></div>`;return}
+  // 计算全3分提交（所有case所有维度全是3）
+  function isAllMax(d){
+    let hasScores=false;
+    for(const pd of(d.data||[])){for(const item of(pd.items||[])){
+      for(const v of Object.values(item.scores||{})){hasScores=true;if(v!==3)return false}
+    }}
+    return hasScores;
+  }
+  const validAll=all.filter(d=>!isAllMax(d));
   const byTarget={multi:[],gen:[]};
-  all.forEach(d=>{
+  validAll.forEach(d=>{
     const hasMulti=(d.data||[]).some(pd=>(pd.items||[]).some(it=>it.type==='multi'));
     const hasGen=(d.data||[]).some(pd=>(pd.items||[]).some(it=>it.type==='gdd'||it.type==='direct'));
     if(hasMulti)byTarget.multi.push(d);
     if(hasGen)byTarget.gen.push(d);
-    // legacy support
-    if(d.target==='multi'&&!hasMulti)byTarget.multi.push(d);
-    if((d.target==='gdd'||d.target==='direct')&&!hasGen)byTarget.gen.push(d);
   });
-  let h='<div class="s"><div class="sh"><div class="sn" style="background:var(--green)">'+all.length+'</div><div class="st">'+all.length+' 份提交</div><button class="refresh-btn" onclick="loadSum()" style="margin-left:auto">刷新</button></div></div>';
-  if(byTarget.gen.length) h+=renderTargetAnalysis('①② 生成效果',byTarget.gen,DIMS_12);
-  if(byTarget.multi.length) h+=renderTargetAnalysis('③ 多轮修改',byTarget.multi,DIMS_3);
+  let h='<div class="s"><div class="sh"><div class="sn" style="background:var(--green)">'+all.length+'</div><div class="st">'+all.length+' 份提交</div>'+(failedFiles.length?'<span style="margin-left:8px;font-size:11px;color:var(--red)">⚠ '+failedFiles.length+'个文件加载失败</span>':'')+(all.length-validAll.length?'<span style="margin-left:8px;font-size:11px;color:var(--dim)">分析排除'+(all.length-validAll.length)+'人(全3分)</span>':'')+'<span style="margin-left:auto;font-size:11px;color:var(--dim)">每60秒自动刷新</span><button class="refresh-btn" onclick="loadSum()" style="margin-left:8px">刷新</button></div></div>';
+  if(byTarget.gen.length) h+=renderTargetAnalysis('新游戏生成',validAll,DIMS_12);
+  if(byTarget.multi.length) h+=renderTargetAnalysis('多轮修改',validAll,DIMS_3);
   h+='<div id="submitList"></div>';
-  h+='<div class="s" style="display:flex;gap:10px"><button class="tab active" style="border:none" onclick="expExcel()">导出Excel</button><button class="tab" style="border:none" onclick="expHtml()">导出HTML报告</button></div>';
+  h+='<div class="s" style="display:flex;gap:10px"><button class="tab active" style="border:none" onclick="expHtml()">导出HTML报告</button></div>';
   document.getElementById('app').innerHTML=h;window._d=all;
   setTimeout(()=>{
     let sl='';
     all.forEach((d,di)=>{
       const fileName=window._files?window._files[di]:'';
       sl+='<div style="border:1px solid var(--border);border-radius:6px;margin-bottom:6px;overflow:hidden"><div style="display:flex;align-items:center;padding:8px 12px;cursor:pointer;background:var(--bg)" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\'"><b style="flex:1">'+d.name+'</b><span style="color:var(--dim);font-size:11px;margin-right:8px">'+(d.platforms||[]).join(', ')+'</span><span style="font-size:10px;color:var(--light)">'+new Date(d.time).toLocaleString('zh-CN')+'</span></div><div style="display:none;padding:8px 12px;border-top:1px solid var(--border);font-size:12px">';
-      (d.data||[]).forEach(pd=>{const avgs=(pd.items||[]).map(i=>parseFloat(i.avg)).filter(v=>!isNaN(v));const avg=avgs.length?(avgs.reduce((a,b)=>a+b,0)/avgs.length).toFixed(2):'-';sl+='<div style="margin-bottom:4px"><b>'+pd.platform+'</b>: 均分 <span style="color:var(--accent);font-weight:700">'+avg+'</span></div>'});
+      (d.data||[]).forEach(pd=>{const avgs=(pd.items||[]).map(i=>parseFloat(i.avg)).filter(v=>!isNaN(v)&&v>0);const avg=avgs.length?(avgs.reduce((a,b)=>a+b,0)/avgs.length).toFixed(2):'-';sl+='<div style="margin-bottom:4px"><b>'+pd.platform+'</b>: 均分 <span style="color:var(--accent);font-weight:700">'+avg+'</span></div>'});
       sl+='<div style="display:flex;gap:8px;margin-top:6px"><button style="padding:4px 12px;background:var(--accent);color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer" onclick="viewSubmit('+di+')">查看详情</button><button style="padding:4px 12px;background:var(--bg);color:var(--red);border:1px solid var(--red);border-radius:4px;font-size:11px;cursor:pointer" onclick="delSubmit(\''+fileName+'\','+di+')">删除</button></div></div></div>';
     });
     const el=document.getElementById('submitList');if(el)el.innerHTML=sl;
   },0);
-  }catch(e){document.getElementById('app').innerHTML='<div class="s"><div class="sd" style="color:var(--red)">加载错误: '+e.message+'</div></div>';console.error(e)}
+  startAutoRefresh();
+  }catch(e){stopAutoRefresh();document.getElementById('app').innerHTML='<div class="s"><div class="sd" style="color:var(--red)">加载错误: '+e.message+'</div></div>';console.error(e)}
+}
+function calcSubjectiveRank(rankData){
+  const platScores={};
+  rankData.forEach(d=>{const n=d.ranking.length;d.ranking.forEach(r=>{if(!platScores[r.platform])platScores[r.platform]={score:0,count:0};platScores[r.platform].score+=n-r.rank+1;platScores[r.platform].count++})});
+  return Object.keys(platScores).map(p=>({platform:p,score:platScores[p].score,count:platScores[p].count,avg:platScores[p].count?(platScores[p].score/platScores[p].count).toFixed(2):'-'})).sort((a,b)=>b.score-a.score);
 }
 function renderTargetAnalysis(title,data,dims){
+  const isMulti=title.includes('多轮');
   const platStats={};
-  data.forEach(d=>{(d.data||[]).forEach(pd=>{
-    if(!platStats[pd.platform])platStats[pd.platform]={dimSums:{},dimCounts:{},totalScores:[],items:[]};
-    const ps=platStats[pd.platform];
-    dims.forEach(dim=>{if(!ps.dimSums[dim.k]){ps.dimSums[dim.k]=0;ps.dimCounts[dim.k]=0}});
-    (pd.items||[]).forEach(item=>{
-      let it=0,ic=0;
-      dims.forEach(dim=>{const v=(item.scores||{})[dim.k];if(v!==undefined&&v!==null){ps.dimSums[dim.k]+=v;ps.dimCounts[dim.k]++;it+=v;ic++}});
-      if(ic)ps.totalScores.push(it/ic);
-      ps.items.push({...item,platform:pd.platform});
+  // 构建测评人维度明细
+  const evaluatorDetail=[];
+  data.forEach(d=>{
+    const ev={name:d.name,platforms:{}};
+    (d.data||[]).forEach(pd=>{
+      // 按目标类型过滤items
+      const items=(pd.items||[]).filter(it=>isMulti?it.type==='multi':it.type!=='multi');
+      if(!items.length)return;
+      if(!platStats[pd.platform])platStats[pd.platform]={dimSums:{},dimCounts:{},totalScores:[],items:[]};
+      const ps=platStats[pd.platform];
+      dims.forEach(dim=>{if(!ps.dimSums[dim.k]){ps.dimSums[dim.k]=0;ps.dimCounts[dim.k]=0}});
+      let pScores={},hasValid=false;
+      items.forEach(item=>{
+        const allMax=dims.every(dim=>{const v=(item.scores||{})[dim.k];return v===3});
+        if(allMax)return;
+        let it=0,ic=0;
+        dims.forEach(dim=>{const v=(item.scores||{})[dim.k];if(v!==undefined&&v!==null&&v!==0){ps.dimSums[dim.k]+=v;ps.dimCounts[dim.k]++;pScores[dim.k]=(pScores[dim.k]||0)+v;it+=v;ic++}});
+        if(ic){ps.totalScores.push(it/ic);hasValid=true}
+        ps.items.push({...item,platform:pd.platform});
+      });
+      if(hasValid){ev.platforms[pd.platform]=pScores;ev.platforms[pd.platform]._avg=+(Object.values(pScores).filter(v=>typeof v==='number').reduce((a,b)=>a+b,0)/Object.values(pScores).filter(v=>typeof v==='number').length).toFixed(2)}
     });
-  })});
+    evaluatorDetail.push(ev);
+  });
   const platforms=Object.keys(platStats);if(!platforms.length)return'';
   const avg=arr=>arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length):0;
   const fmtA=v=>typeof v==='number'?v.toFixed(2):'-';
   const aid='a_'+title.replace(/[^a-z0-9]/gi,'');
-  window[aid]={platStats,platforms,dims,title,data};
+  // 收集主观排名数据 — 全部有效提交
+  const rankData=[];
+  data.forEach(d=>{if(d.ranking&&d.ranking.length)rankData.push({name:d.name,ranking:d.ranking})});
+  window[aid]={platStats,platforms,dims,title,data,rankData,evaluatorDetail};
   let h='<div class="s"><div class="sh"><div class="sn" style="background:var(--blue)">'+title[0]+'</div><div class="st">'+title+'</div></div><div class="analysis-grid">';
   const sorted=platforms.map(p=>({p,s:avg(platStats[p].totalScores)})).sort((a,b)=>b.s-a.s);
   h+='<div class="acard" onclick="showAnalysis(\''+aid+'\',\'rank\')"><div class="acard-title">平台综合排名</div><div class="acard-preview">'+sorted.slice(0,3).map((x,i)=>(i+1)+'. '+x.p+' '+fmtA(x.s)).join('<br>')+'</div></div>';
   h+='<div class="acard" onclick="showAnalysis(\''+aid+'\',\'heatmap\')"><div class="acard-title">维度强弱热力图</div><div class="acard-preview">各平台各维度得分着色对比</div></div>';
   h+='<div class="acard" onclick="showAnalysis(\''+aid+'\',\'bestworst\')"><div class="acard-title">单项最优/最差</div><div class="acard-preview">各维度冠军和短板一览</div></div>';
+  if(rankData.length){const preview=calcSubjectiveRank(rankData).slice(0,3).map((x,i)=>(i+1)+'. '+x.platform).join('<br>');h+='<div class="acard" onclick="showAnalysis(\''+aid+'\',\'subjective\')"><div class="acard-title">主观平台排名</div><div class="acard-preview">'+preview+'<br><span style="font-size:10px;color:var(--dim)">'+rankData.length+'人参与</span></div></div>'}
   if(title.includes('多轮')){h+='<div class="acard" onclick="showAnalysis(\''+aid+'\',\'trend\')"><div class="acard-title">多轮趋势分析</div><div class="acard-preview">3轮修改分数变化趋势</div></div>'}
   h+='</div></div>';
   return h;
 }
 function showAnalysis(aid,type){
   const d=window[aid];if(!d)return;
-  const{platStats,platforms,dims,title}=d;
+  const{platStats,platforms,dims,title,evaluatorDetail,rankData}=d;
   const avg=arr=>arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length):0;
   const fmtA=v=>typeof v==='number'?v.toFixed(2):'-';
+  // 通用：测评人明细表
+  function evaluatorTable(valueKey,formatFn){
+    let t='<div style="margin-top:16px;font-size:14px;font-weight:700;margin-bottom:8px">测评人明细</div>';
+    t+='<div style="overflow-x:auto"><table class="dt"><tr><th>测评人</th>';
+    platforms.forEach(p=>{t+='<th>'+p+'</th>'});t+='</tr>';
+    evaluatorDetail.forEach(ev=>{
+      t+='<tr><td><b>'+ev.name+'</b></td>';
+      platforms.forEach(p=>{
+        const pv=ev.platforms[p];
+        const val=pv?pv[valueKey]:null;
+        if(val!==null&&val!==undefined){
+          const v=typeof val==='number'?val:parseFloat(val);
+          const color=v>=2.5?'var(--green)':v>=1.5?'var(--accent)':'var(--red)';
+          t+='<td style="font-weight:700;color:'+color+'">'+formatFn(val)+'</td>';
+        }else{
+          t+='<td style="color:var(--light)">-</td>';
+        }
+      });
+      t+='</tr>';
+    });
+    t+='</table></div>';
+    return t;
+  }
   let h='<h2>'+title+' - ';
   if(type==='rank'){
     h+='平台综合排名</h2>';
@@ -485,20 +729,79 @@ function showAnalysis(aid,type){
     h+='<div style="margin-top:16px">';
     sorted.forEach((x,i)=>{const pct=maxS>0?Math.round(x.s/3*100):0;const color=i===0?'#16a34a':'var(--accent)';h+='<div class="bar-row"><span class="bar-label">'+x.p+'</span><div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+color+'"></div></div><span class="bar-val" style="color:'+color+'">'+fmtA(x.s)+'</span></div>'});
     h+='</div>';
+    h+=evaluatorTable('_avg',v=>typeof v==='number'?v.toFixed(2):v);
   }else if(type==='heatmap'){
     h+='维度强弱热力图</h2><div style="overflow-x:auto"><table class="dt heatmap"><tr><th>平台</th>';
     dims.forEach(dim=>{h+='<th>'+dim.name+'</th>'});h+='</tr>';
-    platforms.forEach(p=>{const ps=platStats[p];h+='<tr><td><b>'+p+'</b></td>';dims.forEach(dim=>{const val=ps.dimCounts[dim.k]?ps.dimSums[dim.k]/ps.dimCounts[dim.k]:0;const level=val>=2.5?3:val>=1.5?2:val>=0.5?1:0;h+='<td class="hm-'+level+'">'+val.toFixed(1)+'</td>'});h+='</tr>'});
+    platforms.forEach(p=>{const ps=platStats[p];h+='<tr><td><b>'+p+'</b></td>';dims.forEach(dim=>{const val=ps.dimCounts[dim.k]?ps.dimSums[dim.k]/ps.dimCounts[dim.k]:null;const level=val!==null?(val>=2.5?3:val>=1.5?2:val>=0.5?1:0):-1;h+='<td class="'+(level>=0?'hm-'+level:'')+'" style="'+(level<0?'color:var(--light)':'')+'">'+(val!==null?val.toFixed(1):'-')+'</td>'});h+='</tr>'});
     h+='</table></div>';
+    // 测评人维度明细
+    h+='<div style="margin-top:16px;font-size:14px;font-weight:700;margin-bottom:8px">测评人维度明细</div>';
+    platforms.forEach(p=>{
+      h+='<div style="font-size:13px;font-weight:600;margin:8px 0 4px;color:var(--accent)">'+p+'</div>';
+      h+='<div style="overflow-x:auto"><table class="dt heatmap"><tr><th>测评人</th>';
+      dims.forEach(dim=>{h+='<th>'+dim.name+'</th>'});h+='</tr>';
+      evaluatorDetail.forEach(ev=>{
+        h+='<tr><td><b>'+ev.name+'</b></td>';
+        dims.forEach(dim=>{
+          if(ev.platforms[p]){
+            const v=ev.platforms[p][dim.k];
+            if(v!==undefined&&v!==null){
+              const level=v>=2.5?3:v>=1.5?2:v>=0.5?1:0;
+              h+='<td class="hm-'+level+'" style="font-weight:700">'+v.toFixed(2)+'</td>';
+            }else{h+='<td style="color:var(--light)">-</td>'}
+          }else{h+='<td style="color:var(--light)">-</td>'}
+        });
+        h+='</tr>';
+      });
+      h+='</table></div>';
+    });
   }else if(type==='bestworst'){
     h+='单项最优/最差</h2><table class="dt"><tr><th>维度</th><th>最佳</th><th>分数</th><th>最差</th><th>分数</th></tr>';
-    dims.forEach(dim=>{let best={p:'',v:-1},worst={p:'',v:4};platforms.forEach(p=>{const ps=platStats[p];const val=ps.dimCounts[dim.k]?ps.dimSums[dim.k]/ps.dimCounts[dim.k]:0;if(val>best.v)best={p,v:val};if(val<worst.v)worst={p,v:val}});h+='<tr><td><b>'+dim.name+'</b></td><td style="color:var(--green)">'+best.p+'</td><td style="color:var(--green);font-weight:700">'+fmtA(best.v)+'</td><td style="color:var(--red)">'+worst.p+'</td><td style="color:var(--red);font-weight:700">'+fmtA(worst.v)+'</td></tr>'});
+    dims.forEach(dim=>{let best={p:'',v:-1},worst={p:'',v:4};platforms.forEach(p=>{const ps=platStats[p];if(!ps.dimCounts[dim.k])return;const val=ps.dimSums[dim.k]/ps.dimCounts[dim.k];if(val>best.v)best={p,v:val};if(val<worst.v)worst={p,v:val}});h+='<tr><td><b>'+dim.name+'</b></td><td style="color:var(--green)">'+best.p+'</td><td style="color:var(--green);font-weight:700">'+fmtA(best.v)+'</td><td style="color:var(--red)">'+worst.p+'</td><td style="color:var(--red);font-weight:700">'+fmtA(worst.v)+'</td></tr>'});
     h+='</table>';
+    // 每个维度的测评人明细
+    h+='<div style="margin-top:16px;font-size:14px;font-weight:700;margin-bottom:8px">各维度测评人打分明细</div>';
+    dims.forEach(dim=>{
+      h+='<div style="font-size:13px;font-weight:600;margin:8px 0 4px;color:var(--accent)">'+dim.name+'</div>';
+      h+='<div style="overflow-x:auto"><table class="dt"><tr><th>测评人</th>';
+      platforms.forEach(p=>{h+='<th>'+p+'</th>'});h+='</tr>';
+      evaluatorDetail.forEach(ev=>{
+        h+='<tr><td><b>'+ev.name+'</b></td>';
+        platforms.forEach(p=>{
+          const v=ev.platforms[p]?ev.platforms[p][dim.k]:null;
+          if(v!==undefined&&v!==null){
+            const color=v>=2.5?'var(--green)':v>=1.5?'var(--accent)':'var(--red)';
+            h+='<td style="font-weight:700;color:'+color+'">'+v.toFixed(2)+'</td>';
+          }else{h+='<td style="color:var(--light)">-</td>'}
+        });
+        h+='</tr>';
+      });
+      h+='</table></div>';
+    });
+  }else if(type==='subjective'){
+    h+='主观平台排名</h2>';
+    const rd=rankData||[];
+    if(!rd.length){h+='<div class="sd">暂无主观排名数据</div>'}
+    else{
+      const platScores={};
+      rd.forEach(r=>{const n=r.ranking.length;r.ranking.forEach(x=>{if(!platScores[x.platform])platScores[x.platform]={score:0,count:0,votes:[]};platScores[x.platform].score+=n-x.rank+1;platScores[x.platform].count++;platScores[x.platform].votes.push({name:r.name,rank:x.rank})})});
+      const sorted=Object.keys(platScores).map(p=>({platform:p,score:platScores[p].score,count:platScores[p].count,avg:platScores[p].count?(platScores[p].score/platScores[p].count).toFixed(2):'-',votes:platScores[p].votes})).sort((a,b)=>b.score-a.score);
+      h+='<table class="dt"><tr><th>排名</th><th>平台</th><th>Borda总分</th><th>人均得分</th><th>投票数</th></tr>';
+      sorted.forEach((x,i)=>{h+='<tr><td>'+(i+1)+'</td><td><b>'+x.platform+'</b></td><td style="font-weight:700;color:'+(i===0?'var(--green)':'var(--accent)')+'">'+x.score+'</td><td>'+x.avg+'</td><td>'+x.count+'</td></tr>'});
+      h+='</table>';
+      h+='<div style="margin-top:16px;font-size:14px;font-weight:700;margin-bottom:8px">各测评人排名明细</div>';
+      h+='<div style="overflow-x:auto"><table class="dt"><tr><th>测评人</th>';
+      sorted.forEach(x=>{h+='<th>'+x.platform+'</th>'});
+      h+='</tr>';
+      rd.forEach(r=>{h+='<tr><td><b>'+r.name+'</b></td>';sorted.forEach(x=>{const v=r.ranking.find(rx=>rx.platform===x.platform);h+='<td style="font-weight:700;color:'+(v&&v.rank===1?'var(--green)':v&&v.rank===sorted.length?'var(--red)':'var(--text)')+'">'+(v?v.rank:'-')+'</td>'});h+='</tr>'});
+      h+='</table></div>';
+    }
   }else if(type==='trend'){
     h+='多轮趋势分析</h2>';
     const colors=['#ea580c','#6366f1','#16a34a','#dc2626','#8b5cf6','#0891b2'];
     const trends={};
-    platforms.forEach(p=>{platStats[p].items.forEach(item=>{if(item.round){if(!trends[p])trends[p]={};trends[p][item.round]=parseFloat(item.avg)||0}})});
+    platforms.forEach(p=>{platStats[p].items.forEach(item=>{if(item.round){if(!trends[p])trends[p]={};const av=parseFloat(item.avg);if(av>0)trends[p][item.round]=av}})});
     const W=500,H=180,padL=40,padR=20,padT=20,padB=30;
     const chartW=W-padL-padR,chartH=H-padT-padB;
     h+='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:600px;height:auto">';
@@ -521,22 +824,22 @@ function viewSubmit(idx){
     const genItems=(pd.items||[]).filter(it=>it.type!=='multi');
     const multiItems=(pd.items||[]).filter(it=>it.type==='multi');
     if(genItems.length){
-      h+='<table class="dt"><tr><th>项目</th>';DIMS_12.forEach(dim=>{h+='<th>'+dim.name+'</th>'});h+='<th>均分</th><th>备注</th></tr>';
+      h+='<table class="dt"><tr><th>项目</th>';DIMS_12.forEach(dim=>{h+='<th>'+dim.name+'</th>'});h+='<th>均分</th><th>链接</th><th>备注</th></tr>';
       genItems.forEach(item=>{
         h+='<tr><td><b>'+(item.name||item.caseId||'-')+'</b></td>';
-        DIMS_12.forEach(dim=>{const v=(item.scores||{})[dim.k];const color=v>=2.5?'var(--green)':v>=1.5?'var(--accent)':'var(--red)';h+='<td style="font-weight:700;color:'+(v!==undefined&&v!==null?color:'var(--dim)')+'">'+(v!==undefined&&v!==null?v:'-')+'</td>'});
-        h+='<td style="font-weight:700;color:var(--accent)">'+(item.avg||'-')+'</td><td style="font-size:11px;text-align:left">'+(item.note||'-')+'</td></tr>';
-        if((item.imgs||[]).length){h+='<tr><td colspan="'+(DIMS_12.length+3)+'"><div style="display:flex;gap:6px;flex-wrap:wrap;padding:4px 0">';item.imgs.forEach(src=>{h+='<img src="'+src+'" style="width:80px;height:60px;object-fit:cover;border-radius:4px;border:1px solid var(--border);cursor:pointer" onclick="viewImg(this.src)">'});h+='</div></td></tr>'}
+        DIMS_12.forEach(dim=>{const v=(item.scores||{})[dim.k];const valid=v!==undefined&&v!==null&&v!==0;const color=v>=2.5?'var(--green)':v>=1.5?'var(--accent)':'var(--red)';h+='<td style="font-weight:700;color:'+(valid?color:'var(--light)')+'">'+(valid?v:'-')+'</td>'});
+        h+='<td style="font-weight:700;color:var(--accent)">'+(item.avg||'-')+'</td><td style="font-size:11px;text-align:left">'+(item.link?'<a href="'+item.link+'" target="_blank" style="color:var(--blue)">'+item.link+'</a>':'-')+'</td><td style="font-size:11px;text-align:left">'+(item.note||'-')+'</td></tr>';
+        if((item.imgs||[]).length){h+='<tr><td colspan="'+(DIMS_12.length+4)+'"><div style="display:flex;gap:6px;flex-wrap:wrap;padding:4px 0">';item.imgs.forEach(src=>{h+='<img src="'+src+'" style="width:80px;height:60px;object-fit:cover;border-radius:4px;border:1px solid var(--border);cursor:pointer" onclick="viewImg(this.src)">'});h+='</div></td></tr>'}
       });h+='</table>';
     }
     if(multiItems.length){
-      h+='<div style="font-size:12px;font-weight:600;color:#be185d;margin:8px 0 4px">③多轮修改</div>';
-      h+='<table class="dt"><tr><th>轮次</th>';DIMS_3.forEach(dim=>{h+='<th>'+dim.name+'</th>'});h+='<th>均分</th><th>备注</th></tr>';
+      h+='<div style="font-size:12px;font-weight:600;color:#be185d;margin:8px 0 4px">多轮修改</div>';
+      h+='<table class="dt"><tr><th>轮次</th>';DIMS_3.forEach(dim=>{h+='<th>'+dim.name+'</th>'});h+='<th>均分</th><th>链接</th><th>备注</th></tr>';
       multiItems.forEach(item=>{
         h+='<tr><td><b>'+(item.roundLabel||'轮'+item.round)+'</b></td>';
-        DIMS_3.forEach(dim=>{const v=(item.scores||{})[dim.k];const color=v>=2.5?'var(--green)':v>=1.5?'var(--accent)':'var(--red)';h+='<td style="font-weight:700;color:'+(v!==undefined&&v!==null?color:'var(--dim)')+'">'+(v!==undefined&&v!==null?v:'-')+'</td>'});
-        h+='<td style="font-weight:700;color:var(--accent)">'+(item.avg||'-')+'</td><td style="font-size:11px;text-align:left">'+(item.note||'-')+'</td></tr>';
-        if((item.imgs||[]).length){h+='<tr><td colspan="'+(DIMS_3.length+3)+'"><div style="display:flex;gap:6px;flex-wrap:wrap;padding:4px 0">';item.imgs.forEach(src=>{h+='<img src="'+src+'" style="width:80px;height:60px;object-fit:cover;border-radius:4px;border:1px solid var(--border);cursor:pointer" onclick="viewImg(this.src)">'});h+='</div></td></tr>'}
+        DIMS_3.forEach(dim=>{const v=(item.scores||{})[dim.k];const valid=v!==undefined&&v!==null&&v!==0;const color=v>=2.5?'var(--green)':v>=1.5?'var(--accent)':'var(--red)';h+='<td style="font-weight:700;color:'+(valid?color:'var(--light)')+'">'+(valid?v:'-')+'</td>'});
+        h+='<td style="font-weight:700;color:var(--accent)">'+(item.avg||'-')+'</td><td style="font-size:11px;text-align:left">'+(item.link?'<a href="'+item.link+'" target="_blank" style="color:var(--blue)">'+item.link+'</a>':'-')+'</td><td style="font-size:11px;text-align:left">'+(item.note||'-')+'</td></tr>';
+        if((item.imgs||[]).length){h+='<tr><td colspan="'+(DIMS_3.length+4)+'"><div style="display:flex;gap:6px;flex-wrap:wrap;padding:4px 0">';item.imgs.forEach(src=>{h+='<img src="'+src+'" style="width:80px;height:60px;object-fit:cover;border-radius:4px;border:1px solid var(--border);cursor:pointer" onclick="viewImg(this.src)">'});h+='</div></td></tr>'}
       });h+='</table>';
     }
   });
@@ -549,10 +852,18 @@ async function delSubmit(fileName,idx){
   const r=await fetch(`${WOA_API}/projects/${WOA_PROJ}/repository/files`,{method:'DELETE',headers:{'PRIVATE-TOKEN':tk,'Content-Type':'application/json'},body:JSON.stringify({file_path:'data/'+fileName,branch_name:'master',commit_message:'del'})});
   if(r.ok){toast('已删除');loadSum()}else{toast('删除失败')}
 }
-function expMyExcel(){const my=getMyData();const wb=XLSX.utils.book_new();const dims=my.target==='multi'?DIMS_3:DIMS_12;const header=['平台','项目'];dims.forEach(d=>{header.push(d.name)});header.push('均分','备注');const rows=[['测评人: '+my.name],[],header];my.data.forEach(pd=>{(pd.items||[]).forEach(item=>{const row=[pd.platform,item.name||item.roundLabel||'轮'+item.round];dims.forEach(d=>{row.push((item.scores||{})[d.k]??'')});row.push(item.avg||'',item.note||'');rows.push(row)})});const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=header.map(()=>({wch:12}));XLSX.utils.book_append_sheet(wb,ws,'评分');XLSX.writeFile(wb,my.name+'_'+new Date().toISOString().slice(0,10)+'.xlsx');toast('已导出')}
-function expMyHtml(){const my=getMyData();const dims=my.target==='multi'?DIMS_3:DIMS_12;let html='<!DOCTYPE html><html><head><meta charset=UTF-8><title>'+my.name+'</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;padding:30px;font-size:13px}h1{font-size:18px;margin-bottom:8px}h2{font-size:15px;margin:12px 0 6px;color:#ea580c}table{border-collapse:collapse;width:100%;margin:6px 0;font-size:12px}th,td{border:1px solid #e7e5e4;padding:5px 7px;text-align:center}th{background:#f5f5f4}.hi{color:#16a34a;font-weight:700}.mid{color:#ea580c;font-weight:700}.lo{color:#dc2626;font-weight:700}.imgs{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}.imgs img{width:140px;height:100px;object-fit:cover;border-radius:5px}</style></head><body><h1>'+my.name+'</h1>';my.data.forEach(pd=>{html+='<h2>'+pd.platform+'</h2><table><tr><th>项目</th>';dims.forEach(d=>{html+='<th>'+d.name+'</th>'});html+='<th>均分</th><th>备注</th></tr>';(pd.items||[]).forEach(item=>{html+='<tr><td>'+(item.name||item.roundLabel||'轮'+item.round)+'</td>';dims.forEach(d=>{const v=(item.scores||{})[d.k];html+='<td class="'+(v>=2.5?'hi':v>=1.5?'mid':'lo')+'">'+(v!==undefined&&v!==null?v:'-')+'</td>'});html+='<td>'+(item.avg||'-')+'</td><td style="text-align:left">'+(item.note||'')+'</td></tr>';if((item.imgs||[]).length){html+='<tr><td colspan="'+(dims.length+3)+'"><div class=imgs>';item.imgs.forEach(src=>{html+='<img src="'+src+'">'});html+='</div></td></tr>'}});html+='</table>'});html+='</body></html>';const blob=new Blob([html],{type:'text/html'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=my.name+'_report.html';a.click();toast('已导出')}
-function expExcel(){const all=window._d||[];if(!all.length){toast('无数据');return}const wb=XLSX.utils.book_new();const sumRows=[['AI游戏平台测评汇总'],['时间: '+new Date().toLocaleString('zh-CN')],[]];sumRows.push(['平台','评测项数','综合均分']);const pt={};all.forEach(d=>{(d.data||[]).forEach(pd=>{if(!pt[pd.platform])pt[pd.platform]={scores:[],count:0};(pd.items||[]).forEach(item=>{if(item.avg){pt[pd.platform].scores.push(parseFloat(item.avg));pt[pd.platform].count++}})})});Object.keys(pt).forEach(p=>{const s=pt[p].scores;sumRows.push([p,pt[p].count,s.length?(s.reduce((a,b)=>a+b,0)/s.length).toFixed(2):'-'])});XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sumRows),'汇总');XLSX.writeFile(wb,'AI测评_'+new Date().toISOString().slice(0,10)+'.xlsx');toast('已导出')}
-function expHtml(){const all=window._d||[];if(!all.length){toast('无数据');return}let html='<!DOCTYPE html><html><head><meta charset=UTF-8><title>汇总</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;padding:30px;font-size:13px}h1{font-size:20px;margin-bottom:8px}h2{font-size:16px;margin:14px 0 6px;color:#ea580c}table{border-collapse:collapse;width:100%;margin:6px 0 14px;font-size:12px}th,td{border:1px solid #e7e5e4;padding:5px 7px;text-align:center}th{background:#f5f5f4}.hi{color:#16a34a;font-weight:700}.mid{color:#ea580c;font-weight:700}.lo{color:#dc2626;font-weight:700}.imgs{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}.imgs img{width:140px;height:100px;object-fit:cover;border-radius:5px}</style></head><body><h1>AI游戏测评汇总</h1>';all.forEach(d=>{html+='<h2>'+d.name+'</h2>';const dims=d.target==='multi'?DIMS_3:DIMS_12;(d.data||[]).forEach(pd=>{html+='<p style="font-weight:600;color:#ea580c;margin:6px 0">'+pd.platform+'</p><table><tr><th>项目</th>';dims.forEach(dm=>{html+='<th>'+dm.name+'</th>'});html+='<th>均分</th><th>备注</th></tr>';(pd.items||[]).forEach(item=>{html+='<tr><td>'+(item.name||item.roundLabel||'轮'+item.round)+'</td>';dims.forEach(dm=>{const v=(item.scores||{})[dm.k];html+='<td class="'+(v>=2.5?'hi':v>=1.5?'mid':'lo')+'">'+(v!==undefined&&v!==null?v:'-')+'</td>'});html+='<td>'+(item.avg||'-')+'</td><td style="text-align:left">'+(item.note||'')+'</td></tr>';if((item.imgs||[]).length){html+='<tr><td colspan="'+(dims.length+3)+'"><div class=imgs>';item.imgs.forEach(src=>{html+='<img src="'+src+'">'});html+='</div></td></tr>'}});html+='</table>'})});html+='</body></html>';const blob=new Blob([html],{type:'text/html'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='汇总_'+new Date().toISOString().slice(0,10)+'.html';a.click();toast('已导出')}
+async function expMyExcel(){const my=await getMyData();const wb=XLSX.utils.book_new();const dims=my.target==='multi'?DIMS_3:DIMS_12;const header=['平台','项目'];dims.forEach(d=>{header.push(d.name)});header.push('均分','备注');const rows=[['测评人: '+my.name],[],header];my.data.forEach(pd=>{(pd.items||[]).forEach(item=>{const row=[pd.platform,item.name||item.roundLabel||'轮'+item.round];dims.forEach(d=>{const v=(item.scores||{})[d.k];row.push(v!==undefined&&v!==null&&v!==0?v:'')});row.push(item.avg||'',item.note||'');rows.push(row)})});const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=header.map(()=>({wch:12}));XLSX.utils.book_append_sheet(wb,ws,'评分');XLSX.writeFile(wb,my.name+'_'+new Date().toISOString().slice(0,10)+'.xlsx');toast('已导出')}
+async function expMyHtml(){
+  const err=validateRequired();if(err){toast(err);return}
+  // Build HTML
+  const my=await getMyData();let html='<!DOCTYPE html><html><head><meta charset=UTF-8><title>'+my.name+'</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;padding:30px;font-size:13px}h1{font-size:18px;margin-bottom:8px}h2{font-size:15px;margin:12px 0 6px;color:#ea580c}table{border-collapse:collapse;width:100%;margin:6px 0;font-size:12px}th,td{border:1px solid #e7e5e4;padding:5px 7px;text-align:center}th{background:#f5f5f4}.hi{color:#16a34a;font-weight:700}.mid{color:#ea580c;font-weight:700}.lo{color:#dc2626;font-weight:700}.rank-box{margin:10px 0;padding:10px 14px;background:#fef3c7;border-radius:8px;font-size:13px}.imgs{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}.imgs img{width:140px;height:100px;object-fit:cover;border-radius:5px}a{color:#2563eb}</style></head><body><h1>'+my.name+'</h1>';
+if(my.ranking&&my.ranking.length){html+='<div class="rank-box"><b>平台综合排名</b><br><span style="font-size:14px;font-weight:700;color:#92400e">'+my.ranking.map(r=>r.platform).join(' > ')+'</span></div>'}
+my.data.forEach(pd=>{const items=pd.items||[];if(!items.length)return;html+='<h2>'+pd.platform+'</h2>';const genItems=items.filter(it=>it.type==='gdd'||it.type==='direct');const multiItems=items.filter(it=>it.type==='multi');
+if(genItems.length){html+='<table><tr><th>项目</th>';DIMS_12.forEach(d=>{html+='<th>'+d.name+'</th>'});html+='<th>均分</th><th>链接</th><th>备注</th></tr>';genItems.forEach(item=>{html+='<tr><td>'+(item.name||item.caseId)+'</td>';DIMS_12.forEach(d=>{const v=(item.scores||{})[d.k];const valid=v!==undefined&&v!==null&&v!==0;html+='<td class="'+(valid?(v>=2.5?'hi':v>=1.5?'mid':'lo'):'')+'" style="'+(valid?'':'color:#a8a29e')+'">'+(valid?v:'-')+'</td>'});html+='<td>'+(item.avg||'-')+'</td><td style="text-align:left;font-size:11px">'+(item.link?'<a href="'+item.link+'" target="_blank">'+item.link+'</a>':'-')+'</td><td style="text-align:left">'+(item.note||'')+'</td></tr>';if((item.imgs||[]).length){html+='<tr><td colspan="'+(DIMS_12.length+4)+'"><div class=imgs>';item.imgs.forEach(src=>{html+='<img src="'+src+'">'});html+='</div></td></tr>'}});html+='</table>'}
+if(multiItems.length){html+='<table><tr><th>轮次</th>';DIMS_3.forEach(d=>{html+='<th>'+d.name+'</th>'});html+='<th>均分</th><th>链接</th><th>备注</th></tr>';multiItems.forEach(item=>{html+='<tr><td>'+(item.roundLabel||'轮'+item.round)+'</td>';DIMS_3.forEach(d=>{const v=(item.scores||{})[d.k];const valid=v!==undefined&&v!==null&&v!==0;html+='<td class="'+(valid?(v>=2.5?'hi':v>=1.5?'mid':'lo'):'')+'" style="'+(valid?'':'color:#a8a29e')+'">'+(valid?v:'-')+'</td>'});html+='<td>'+(item.avg||'-')+'</td><td style="text-align:left;font-size:11px">'+(item.link?'<a href="'+item.link+'" target="_blank">'+item.link+'</a>':'-')+'</td><td style="text-align:left">'+(item.note||'')+'</td></tr>';if((item.imgs||[]).length){html+='<tr><td colspan="'+(DIMS_3.length+4)+'"><div class=imgs>';item.imgs.forEach(src=>{html+='<img src="'+src+'">'});html+='</div></td></tr>'}});html+='</table>'}});
+html+='</body></html>';const blob=new Blob([html],{type:'text/html'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=my.name+'_report.html';a.click();toast('已导出')}
+function expExcel(){const all=window._d||[];if(!all.length){toast('无数据');return}const wb=XLSX.utils.book_new();const sumRows=[['AI游戏平台测评汇总'],['时间: '+new Date().toLocaleString('zh-CN')],[]];sumRows.push(['平台','评测项数','综合均分']);const pt={};all.forEach(d=>{(d.data||[]).forEach(pd=>{if(!pt[pd.platform])pt[pd.platform]={scores:[],count:0};(pd.items||[]).forEach(item=>{if(item.avg){const av=parseFloat(item.avg);if(av>0){pt[pd.platform].scores.push(av);pt[pd.platform].count++}}})})});Object.keys(pt).forEach(p=>{const s=pt[p].scores;sumRows.push([p,pt[p].count,s.length?(s.reduce((a,b)=>a+b,0)/s.length).toFixed(2):'-'])});XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sumRows),'汇总');XLSX.writeFile(wb,'AI测评_'+new Date().toISOString().slice(0,10)+'.xlsx');toast('已导出')}
+function expHtml(){const all=window._d||[];if(!all.length){toast('无数据');return}let html='<!DOCTYPE html><html><head><meta charset=UTF-8><title>汇总</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;padding:30px;font-size:13px}h1{font-size:20px;margin-bottom:8px}h2{font-size:16px;margin:14px 0 6px;color:#ea580c}table{border-collapse:collapse;width:100%;margin:6px 0 14px;font-size:12px}th,td{border:1px solid #e7e5e4;padding:5px 7px;text-align:center}th{background:#f5f5f4}.hi{color:#16a34a;font-weight:700}.mid{color:#ea580c;font-weight:700}.lo{color:#dc2626;font-weight:700}.imgs{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}.imgs img{width:140px;height:100px;object-fit:cover;border-radius:5px}</style></head><body><h1>AI游戏测评汇总</h1>';all.forEach(d=>{html+='<h2>'+d.name+'</h2>';const dims=d.target==='multi'?DIMS_3:DIMS_12;(d.data||[]).forEach(pd=>{html+='<p style="font-weight:600;color:#ea580c;margin:6px 0">'+pd.platform+'</p><table><tr><th>项目</th>';dims.forEach(dm=>{html+='<th>'+dm.name+'</th>'});html+='<th>均分</th><th>备注</th></tr>';(pd.items||[]).forEach(item=>{html+='<tr><td>'+(item.name||item.roundLabel||'轮'+item.round)+'</td>';dims.forEach(dm=>{const v=(item.scores||{})[dm.k];const valid=v!==undefined&&v!==null&&v!==0;html+='<td class="'+(valid?(v>=2.5?'hi':v>=1.5?'mid':'lo'):'')+'" style="'+(valid?'':'color:#a8a29e')+'">'+(valid?v:'-')+'</td>'});html+='<td>'+(item.avg||'-')+'</td><td style="text-align:left">'+(item.note||'')+'</td></tr>';if((item.imgs||[]).length){html+='<tr><td colspan="'+(dims.length+3)+'"><div class=imgs>';item.imgs.forEach(src=>{html+='<img src="'+src+'">'});html+='</div></td></tr>'}});html+='</table>'})});html+='</body></html>';const blob=new Blob([html],{type:'text/html'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='汇总_'+new Date().toISOString().slice(0,10)+'.html';a.click();toast('已导出')}
 // ===== IMAGE HELPERS =====
 function addImg(base,input){const file=input.files[0];if(file)readImg(base,file)}
 function readImg(base,file){if(!file||!file.type.startsWith('image'))return;const reader=new FileReader();reader.onload=e=>{if(!fields[base+'_imgs'])fields[base+'_imgs']=[];if(fields[base+'_imgs'].length>=4){toast('最多4张');return}fields[base+'_imgs'].push(e.target.result);updateImgZone(base)};reader.readAsDataURL(file)}
@@ -565,6 +876,7 @@ document.addEventListener("paste",function(e){var zone=document.activeElement;if
 document.addEventListener("drop",function(e){var el=e.target.closest("[data-imgbase]");if(el){e.preventDefault();readImg(el.dataset.imgbase,e.dataTransfer.files[0])}});
 document.addEventListener("dragover",function(e){if(e.target.closest("[data-imgbase]"))e.preventDefault()});
 document.addEventListener('click',function(e){if(e.target.tagName==='IMG'&&e.target.closest('.img-thumb')){viewImg(e.target.src)}});
+document.addEventListener('click',function(e){const pb=e.target.closest('.prompt-box');if(pb&&pb.dataset.copy)cp(pb)});
 if(cfg.name&&cfg.platforms.length)mode='tester';
 render();
 </script>
