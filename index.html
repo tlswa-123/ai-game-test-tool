@@ -687,10 +687,20 @@ async function loadSum(){
   const rankData=[];
   validAll.forEach(d=>{if(d.ranking&&d.ranking.length)rankData.push({name:d.name,ranking:d.ranking})});
   if(rankData.length){
-    const sr=calcSubjectiveRank(rankData);
-    window.a_subjective={rankData,sorted:sr};
+    // 收集所有排名中出现的平台
+    const allRankPlats=new Set();
+    rankData.forEach(d=>d.ranking.forEach(r=>allRankPlats.add(r.platform)));
+    const rankPlats=[...allRankPlats].sort();
+    // 默认全选
+    if(!window._rankSelPlats)window._rankSelPlats=[...rankPlats];
+    // 确保已选平台仍在有效列表中
+    window._rankSelPlats=window._rankSelPlats.filter(p=>rankPlats.includes(p));
+    const selPlats=window._rankSelPlats;
+    const sr=calcSubjectiveRank(rankData,selPlats);
+    window.a_subjective={rankData,sorted:sr,allPlats:rankPlats,selPlats};
     h+='<div class="s"><div class="sh"><div class="sn" style="background:#8b5cf6">主</div><div class="st">主观平台排名</div></div><div class="analysis-grid">';
-    h+='<div class="acard" onclick="showAnalysis(\'a_subjective\',\'subjective\')"><div class="acard-title">主观平台排名</div><div class="acard-preview">'+sr.slice(0,3).map((x,i)=>(i+1)+'. '+x.platform).join('<br>')+'<br><span style="font-size:10px;color:var(--dim)">'+rankData.length+'人参与</span></div></div>';
+    const previewText=selPlats.length>2?sr.slice(0,3).map((x,i)=>(i+1)+'. '+x.platform).join('<br>'):'<span style="font-size:11px;color:var(--dim)">选择2个以上平台才显示排名</span>';
+    h+='<div class="acard" onclick="showAnalysis(\'a_subjective\',\'subjective\')"><div class="acard-title">主观平台排名</div><div class="acard-preview">'+previewText+'<br><span style="font-size:10px;color:var(--dim)">'+rankData.length+'人参与 | 已选'+selPlats.length+'/'+rankPlats.length+'平台</span></div></div>';
     h+='</div></div>';
   }
   // 备注分析板块
@@ -733,9 +743,17 @@ async function loadSum(){
   startAutoRefresh();
   }catch(e){stopAutoRefresh();document.getElementById('app').innerHTML='<div class="s"><div class="sd" style="color:var(--red)">加载错误: '+e.message+'</div></div>';console.error(e)}
 }
-function calcSubjectiveRank(rankData){
+function calcSubjectiveRank(rankData,filterPlats){
   const platScores={};
-  rankData.forEach(d=>{const n=d.ranking.length;d.ranking.forEach(r=>{if(!platScores[r.platform])platScores[r.platform]={score:0,count:0};platScores[r.platform].score+=n-r.rank+1;platScores[r.platform].count++})});
+  rankData.forEach(d=>{
+    const n=d.ranking.length;
+    d.ranking.forEach(r=>{
+      if(filterPlats&&filterPlats.length&&!filterPlats.includes(r.platform))return;
+      if(!platScores[r.platform])platScores[r.platform]={score:0,count:0};
+      platScores[r.platform].score+=n-r.rank+1;
+      platScores[r.platform].count++;
+    });
+  });
   return Object.keys(platScores).map(p=>({platform:p,score:platScores[p].score,count:platScores[p].count,avg:platScores[p].count?(platScores[p].score/platScores[p].count).toFixed(2):'-'})).sort((a,b)=>parseFloat(b.avg)-parseFloat(a.avg));
 }
 function renderTargetAnalysis(title,data,dims){
@@ -802,6 +820,24 @@ function renderTargetAnalysis(title,data,dims){
   if(title.includes('多轮')){h+='<div class="acard" onclick="showAnalysis(\''+aid+'\',\'trend\')"><div class="acard-title">多轮趋势分析</div><div class="acard-preview">3轮修改分数变化趋势</div></div>'}
   h+='</div></div>';
   return h;
+}
+function toggleRankPlat(plat,checked){
+  if(!window._rankSelPlats)window._rankSelPlats=[];
+  if(checked&&!window._rankSelPlats.includes(plat))window._rankSelPlats.push(plat);
+  if(!checked)window._rankSelPlats=window._rankSelPlats.filter(p=>p!==plat);
+  // 重新计算排名并刷新弹窗
+  if(window.a_subjective){
+    window.a_subjective.selPlats=[...window._rankSelPlats];
+    window.a_subjective.sorted=calcSubjectiveRank(window.a_subjective.rankData,window._rankSelPlats);
+  }
+  showAnalysis('a_subjective','subjective');
+}
+function toggleAllRankPlats(selectAll){
+  const d=window.a_subjective;if(!d)return;
+  window._rankSelPlats=selectAll?[...d.allPlats]:[];
+  d.selPlats=[...window._rankSelPlats];
+  d.sorted=calcSubjectiveRank(d.rankData,window._rankSelPlats);
+  showAnalysis('a_subjective','subjective');
 }
 function showAnalysis(aid,type){
   const d=window[aid];if(!d)return;
@@ -916,23 +952,41 @@ function showAnalysis(aid,type){
     const rd=rankData;
     if(!rd.length){h+='<div class="sd">暂无主观排名数据</div>'}
     else{
-      const sr=d.sorted||calcSubjectiveRank(rd);
-      h+='<table class="dt"><tr><th>排名</th><th>平台</th><th>人均得分</th><th>投票数</th></tr>';
-      sr.forEach((x,i)=>{h+='<tr><td>'+(i+1)+'</td><td><b>'+x.platform+'</b></td><td style="font-weight:700;color:'+(i===0?'var(--green)':'var(--accent)')+'">'+x.avg+'</td><td>'+x.count+'</td></tr>'});
-      h+='</table>';
-      h+='<div style="margin-top:16px;font-size:14px;font-weight:700;margin-bottom:8px">各测评人排名明细</div>';
-      const cal4=window.calibration||{};const cm4=cal4.calibMap||{};
-      h+='<div style="overflow-x:auto"><table class="dt"><tr><th>测评人</th>';
-      sr.forEach(x=>{h+='<th>'+x.platform+'</th>'});h+='<th>校正</th></tr>';
-      rd.forEach(r=>{
-        h+='<tr><td><b>'+r.name+'</b></td>';
-        sr.forEach(x=>{const v=r.ranking.find(rx=>rx.platform===x.platform);h+='<td style="font-weight:700;color:'+(v&&v.rank===1?'var(--green)':v&&v.rank===sr.length?'var(--red)':'var(--text)')+'">'+(v?v.rank:'-')+'</td>'});
-        const c=cm4[r.name];const oa=c?c.offsetAvg:0;
-        const oaColor=oa>0.3?'var(--red)':oa<-0.3?'var(--green)':'var(--dim)';
-        h+='<td style="font-size:11px;color:'+oaColor+'">'+(oa>=0?'+':'')+oa.toFixed(2)+'</td>';
-        h+='</tr>';
+      // 平台选择器
+      const allPlats=d.allPlats||[];
+      const selPlats=d.selPlats||allPlats;
+      h+='<div style="margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
+      h+='<span style="font-size:13px;font-weight:600">选择平台：</span>';
+      h+='<span style="font-size:11px;color:var(--dim);cursor:pointer" onclick="toggleAllRankPlats(true)">全选</span>';
+      h+='<span style="font-size:11px;color:var(--dim);cursor:pointer" onclick="toggleAllRankPlats(false)">清空</span>';
+      h+='</div>';
+      h+='<div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap">';
+      allPlats.forEach(p=>{
+        const checked=selPlats.includes(p);
+        h+='<label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:13px"><input type="checkbox" '+(checked?'checked':'')+' onchange="toggleRankPlat(\''+p.replace(/'/g,"\\'")+'\',this.checked)">'+p+'</label>';
       });
-      h+='</table></div>';
+      h+='</div>';
+      if(selPlats.length<=2){
+        h+='<div class="sd" style="color:var(--dim)">请选择2个以上平台进行排名</div>';
+      }else{
+        const sr=calcSubjectiveRank(rd,selPlats);
+        h+='<table class="dt"><tr><th>排名</th><th>平台</th><th>人均得分</th><th>投票数</th></tr>';
+        sr.forEach((x,i)=>{h+='<tr><td>'+(i+1)+'</td><td><b>'+x.platform+'</b></td><td style="font-weight:700;color:'+(i===0?'var(--green)':'var(--accent)')+'">'+x.avg+'</td><td>'+x.count+'</td></tr>'});
+        h+='</table>';
+        h+='<div style="margin-top:16px;font-size:14px;font-weight:700;margin-bottom:8px">各测评人排名明细</div>';
+        const cal4=window.calibration||{};const cm4=cal4.calibMap||{};
+        h+='<div style="overflow-x:auto"><table class="dt"><tr><th>测评人</th>';
+        sr.forEach(x=>{h+='<th>'+x.platform+'</th>'});h+='<th>校正</th></tr>';
+        rd.forEach(r=>{
+          h+='<tr><td><b>'+r.name+'</b></td>';
+          sr.forEach(x=>{const v=r.ranking.find(rx=>rx.platform===x.platform);h+='<td style="font-weight:700;color:'+(v&&v.rank===1?'var(--green)':v&&v.rank===sr.length?'var(--red)':'var(--text)')+'">'+(v?v.rank:'-')+'</td>'});
+          const c=cm4[r.name];const oa=c?c.offsetAvg:0;
+          const oaColor=oa>0.3?'var(--red)':oa<-0.3?'var(--green)':'var(--dim)';
+          h+='<td style="font-size:11px;color:'+oaColor+'">'+(oa>=0?'+':'')+oa.toFixed(2)+'</td>';
+          h+='</tr>';
+        });
+        h+='</table></div>';
+      }
     }
   }else if(type==='calib'){
     h+='校正基准</h2>';
